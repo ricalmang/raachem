@@ -12,7 +12,7 @@ setuptools.setup(
     long_description=long_description,
 	license="MIT",
     url="https://github.com/ricalmang/raachem",
-	install_requires = ["numpy","shutil"],
+	install_requires = ["numpy"],
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
