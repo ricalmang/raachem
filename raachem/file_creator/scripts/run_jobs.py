@@ -10,7 +10,7 @@ def evaluate_list(folder,level=0,scripts=[" "]):
 			#print("{0:}{1:}".format(" "*level, file))
 			level += 1
 			evaluate_list(os.path.join(folder,file),level,scripts)
-		if file == "anr30509_sub":
+		if file == "sub_s_name":
 			scripts.append(os.path.join(folder,file))
 			print("{0:<2}{1:}".format(len(scripts)-1," - " + scripts[-1]))
 			os.system("chmod 755 {0:}".format(os.path.join(folder,file)))
@@ -18,7 +18,7 @@ def evaluate_list(folder,level=0,scripts=[" "]):
 try:	
 	filename = evaluate_list(current_folder)[int(input())]
 	if not filename == " ":
-		os.chdir(filename.replace("anr30509_sub",""))	
+		os.chdir(filename.replace("sub_s_name",""))
 		os.system("{0:}".format(filename))
 		#os.rename(filename,filename.replace("_sub","_subed"))
 	print("Done!")

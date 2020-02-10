@@ -44,11 +44,11 @@ for file in file_weeder([".pbs"])[:n_items]:
 	anr_script.append("sleep 0.2")
 	anr_script.append("rm {0}".format(file))
 	anr_script.append("sleep 0.2")
-anr_script.append("rm anr30509_sub")
+anr_script.append("rm sub_s_name")
 
 if anr_script:
-	with open(os.path.join(directory,"anr30509_sub"),"w+") as script:
+	with open(os.path.join(directory,"sub_s_name"),"w+") as script:
 		script.write("\n".join(anr_script))
-os.system("chmod 755 anr30509_sub")
+os.system("chmod 755 sub_s_name")
 
 

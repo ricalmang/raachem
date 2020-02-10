@@ -1,5 +1,4 @@
 import os
-from raachem.util.gen_purp import w_any
 cf=os.getcwd()
 
 # Data from: Pyykko, P. and Atsumi, M., Chem. Eur. J. 2009, 15, 186.
