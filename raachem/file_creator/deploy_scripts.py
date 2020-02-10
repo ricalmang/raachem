@@ -6,6 +6,7 @@ def deploy():
 	scripts_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),"scripts")
 	while True:
 		options = file_weeder([".py"], scripts_dir)
+		options = [a for a in options if a != "__init__.py"]
 		options.insert(0, "To cancel")
 		print("Which script do you want to paste in the current folder?")
 		for idx, i in enumerate(options):
