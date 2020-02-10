@@ -1,4 +1,4 @@
-import shutil, os
+import os
 from raachem.util.constants import cf
 from raachem.util.gen_purp import file_weeder, w_any, Var
 
@@ -17,8 +17,10 @@ def deploy():
 	if option == "0":
 		return
 	else:
-		with open(os.path.join(scripts_dir,option[int(option)])) as file:
+		with open(os.path.join(scripts_dir,options[int(option)])) as file:
 			script = file.readlines()
 		script = [a.replace("sub_s_name",Var().sub_s_name) for a in script]
-		w_any(script,write_mod="w",filename=options[int(option)],folder=cf)
-		
+		with open((os.path.join(cf, options[int(option)])), "w", newline="\n") as file_b:
+			for line in script:
+				file_b.write(str(line))
+

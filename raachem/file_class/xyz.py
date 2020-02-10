@@ -35,6 +35,7 @@ class XyzFile:
 		el_a = self.all_elements()
 		el_b = other.all_elements()
 		assert len(el_a) > len (el_b), "Can't subtract a larger structure from a smaller one"
+		assert type(self) == type(other), "Operation '-' allowed only for two XYZ objects"
 		idxs_to_rem = []
 		for n in range(len(el_a) - len(el_b)):
 			if all([True if el_a[n+i] == a else False for i,a in enumerate(el_b)]):
