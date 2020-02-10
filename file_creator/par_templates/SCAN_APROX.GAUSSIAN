@@ -1,0 +1,22 @@
+%nprocshared=8
+%mem=15gb
+#T m06l/Gen Opt=(loose,modredundant) Pseudo=Read SCRF=(solvent=methanol,SMD)
+
+Title
+
+1 1
+=====WILL BE GEOMETRY BLOCK=====
+
+B S APROX
+
+LIGHT_ELEMENT_BASIS 0
+6-31G(d,p)
+****
+HEAVY_ELEMENT_BASIS 0
+SDD
+****
+
+HEAVY_ELEMENT_ECP 0 
+SDD
+
+
