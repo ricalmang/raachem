@@ -1,8 +1,9 @@
 # Manually delete the old "raachem" if you had it (pre installer versions)
 # "cd" to the directory that contains the 'setup.py' file
 # Run one of the following commands as apropriated (including the dot character):
-#
-# py -m pip install .
+'''bash
+py -m pip install .
+'''
 # python3 -m pip install .
 # pip3 install .
 # python -m pip install .
