@@ -1,8 +1,9 @@
 import os, math, shutil, re
+from difflib import SequenceMatcher
 from raachem.file_class.xyz import XyzFile
 from raachem.file_class.gjf import GjfFile
-from raachem.util.constants import element_radii, cf, elements
-from raachem.util.gen_purp import read_item, file_weeder, Var, sel_files
+from raachem.util.constants import element_radii, keywords,cf, elements
+from raachem.util.gen_purp import file_weeder, read_item, Var, sel_files
 
 def gjf_gen(weeded_list):
 	def submit_parameters(weeded_list):
@@ -158,3 +159,43 @@ def xyz_insert(weeded_list):
 		except FileNotFoundError: print("file " + i.replace(".xyz",".gjf") + " could not be found!")
 	print("\nJob done!\nPlease lookup the gaussian_input_files directory\n")
 	return
+def validate_gjf(weeded_list):
+	heavy_e = Var().heavy_atom
+	if True:
+		print("---------------------------------------------------------------------------")
+		print("{:^30}{:^15}{:^10}{:^10}{:^10}".format("File","e- number","charge","multip","Validated"))
+		print("---------------------------------------------------------------------------")
+	novel_keys = []
+	for item in weeded_list:
+		gjf = GjfFile(read_item(item))
+		split_list = [i for i in gjf.list[1:gjf.title_idx()] if not i.lower().startswith("%chk")]
+		for x in [None,"/","(",")",",","=","%",":"]:
+			split_list = [a for b in [i.split(x) for i in split_list] for a in b if len(a) > 3]
+		no_match = [i for i in split_list if i.lower() not in [j.lower() for j in keywords] and not i[0].isdigit()]
+		typo_error = []
+		for b in no_match:
+			p_matches = [[b,i,SequenceMatcher(None,b,i).ratio()] for i in keywords if SequenceMatcher(None,b,i).ratio() > 0.6]
+			if p_matches:
+				p_matches.sort(key=lambda x: x[2])
+				typo_error.append([p_matches[0][0],p_matches[0][1]])
+		novel_keys.append([i for i in no_match if i not in [a[0] for a in typo_error]])
+		print(" {:<30}{:>10}{:>10}{:>10}{:^15}".format(gjf.name(),gjf.n_electrons(),gjf.charge(),gjf.multiplicity(),gjf.c_m_validate_txt()))
+		if any([gjf.basis_errors(),typo_error,gjf.ecp_errors(heavy_e),len(gjf.name().split()) != 1]):
+			print("{:>7}+----------------------------ALERT---------------------------+".format(" "))
+			for error in gjf.basis_errors(): print("{:>8}{:>60}".format("|",error+" |"))
+			for error in gjf.ecp_errors(heavy_e): print("{:>8}{:>60}".format("|",error+" |"))
+			for i in typo_error: print("{:>8}{:>60}".format("|", "Is '{}' a typo of '{}'?".format(i[0],i[1]) + " |"))
+			if len(gjf.name().split()) != 1: print("{:>8}{:>60}".format("|", "Filename must not contain spaces!" + " |"))
+			print("{:>7}+-----------------------------------------------------------+".format(" "))
+	print("---------------------------------------------------------------------------\n")
+	novel_keys = list(dict.fromkeys([a for b in novel_keys for a in b]))
+	if novel_keys:
+		print("The following keys were not recognized:")
+		print(novel_keys)
+		print("---------------------------------------------------------------------------\n")
+	try:
+		import raapbs
+	except:
+		return
+
+

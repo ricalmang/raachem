@@ -7,8 +7,7 @@ def show_exception_and_exit(exc_type, exc_value, tb):
 sys.excepthook = show_exception_and_exit
 ############################RAACHEM IMPORTS###############################
 from raachem.file_creator.e_analysis import e_analysis, rel_scf, csv_e_analysis, deduplicate
-from raachem.file_creator.gjf import gjf_gen, xyz_insert
-from raachem.file_creator.pbs import pbs_creator
+from raachem.file_creator.gjf import gjf_gen, xyz_insert, validate_gjf
 from raachem.file_creator.svg import vector_graph
 from raachem.file_creator.xyz import gjf_to_xyz, log_to_xyz, log_to_xyz_scan, log_freq_xyz, superimpose_alg, geodes_int
 from raachem.file_creator.deploy_scripts import deploy
@@ -31,7 +30,7 @@ def user_interface_1():#INITIAL
 		if   option == "0": exit(print("ok"))
 		elif option == "1": log_to_xyz(file_weeder([".log"]))
 		elif option == "2": gjf_gen(file_weeder([".xyz"]))
-		elif option == "3":	pbs_creator()
+		elif option == "3":	validate_gjf(file_weeder([".gjf"]))
 		elif option == "4":	log_to_xyz_scan(file_weeder([".log"]))
 		elif option == "5":	xyz_insert(file_weeder([".xyz"]))
 		elif option == "6": e_analysis(file_weeder([".log"]))
