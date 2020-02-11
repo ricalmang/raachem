@@ -1,39 +1,28 @@
 import os, shutil, time
 cf=os.getcwd()
-conf_dir = os.path.dirname(__file__)
-conf_file = os.path.join(conf_dir, "user.txt")
 
 def read_item(file_name=None, promp=False, extension=None, cf=cf):
 	"""Reads an .xyz, .gjf, .com or .log item and returns a list of its contents ready for class instantiation"""
-	if extension is None:
-		extension = [".xyz"]
+	if extension is None: extension = [".xyz"]
 	if promp != False:
 		print(promp)
 		files = file_weeder(extension)
-		if len(files) == 0:
-			print("Sorry no such files in current directory!")
-			return []
-		for idx,item in enumerate(files):
-			print("{:<5}{:<25}".format(idx+1,item))
+		if len(files) == 0: print("Sorry no such files in current directory!"); return []
+		for idx,item in enumerate(files): print("{:<5}{:<25}".format(idx+1,item))
 		while True:
-			try:
-				file_name = files[int(input())-1]
-				break
+			try: file_name = files[int(input())-1]; break
 			except: print("Invalid input!")
-	with open(os.path.join(cf,file_name),"r") as in_file:
-		in_content = in_file.read().splitlines()
+	with open(os.path.join(cf,file_name),"r") as in_file: in_content = in_file.read().splitlines()
 	in_content.insert(0,file_name)
 	return in_content
 def file_weeder(ext_to_weed,cf=cf, promp=True):
 	"""Looks up files with the extensions provided in current directory"""
 	fulllist=os.listdir(cf)
 	weeded_list=[]
-	if type(ext_to_weed) == str:
-		ext_to_weed = [ext_to_weed]
+	if type(ext_to_weed) == str: ext_to_weed = [ext_to_weed]
 	for extension in ext_to_weed:
 		matching = [s for s in fulllist if extension in s]
-		for match in matching:
-			weeded_list.append(match)
+		for match in matching: weeded_list.append(match)
 	if promp:
 		if len(weeded_list) == 0:
 			print("No {} files found in current directory!".format("or".join(ext_to_weed)))
@@ -48,11 +37,8 @@ def w_any(lines,write_mod="a",filename="alg_log.txt",folder=cf):
 			activity_log.write("\n")
 def is_str_float(i):
 	"""Check if a string can be converted into a float"""
-	try:
-		float(i)
-		return True
-	except ValueError:
-		return False
+	try: float(i); return True
+	except ValueError: return False
 
 def mv_up_folder():
 	"""Move files with a chossen extension up a folder"""
@@ -80,8 +66,7 @@ def sel_files(weeded_list):
 	print("Choose the files you want to operate on:")
 	print("(Multiple files can be separated by a space; 'a' for all files)")
 	print("{:>3}{:>30}".format("0", "None"))
-	for i,a in enumerate(weeded_list):
-		print("{:>3}{:>30}".format(str(i+1),a))
+	for i,a in enumerate(weeded_list): print("{:>3}{:>30}".format(str(i+1),a))
 	while True:
 		option = input().lower().split()
 		if all(b in ["a","0",*[str(a) for a in range(len(weeded_list)+1)]] for b in option): break
@@ -89,7 +74,6 @@ def sel_files(weeded_list):
 	else: return weeded_list if "a" in option else [weeded_list[int(i)-1] for i in option]
 
 def timeit(method):
-
 	def timed(*args, **kw):
 		ts = time.time()
 		result = method(*args, **kw)
@@ -97,7 +81,6 @@ def timeit(method):
 		print('{}:{} ms'.format(method.__name__, (te - ts) * 1000))
 		return result
 	return timed
-
 class Var:
 	conf_dir = os.path.dirname(__file__)
 	conf_file = os.path.join(conf_dir, "user.txt")
@@ -113,10 +96,9 @@ class Var:
 		self.folder_op = True
 		self.gauss_ext = ".com"
 		self.read_variables()
-	def read_variables(self):
+	def read_variables(self,conf_file=conf_file):
 		if not os.path.isfile(conf_file): return
-		with open(conf_file) as file:
-			options = file.readlines()
+		with open(conf_file) as file: options = file.readlines()
 		options = [a.replace("=", " ").split() for a in options]
 		options = [a for a in options if len(a) == 2]
 		for a in options:
@@ -164,7 +146,7 @@ class Var:
 				setattr(self,variables[option],value)
 				break
 			self.write_save()
-	def write_save(self):
+	def write_save(self,conf_dir=conf_dir):
 		otput = []
 		otput.append("#HEIMDALL VARIABLES")
 		otput.append("heimdall_user = {}".format(self.heimdall_user))
