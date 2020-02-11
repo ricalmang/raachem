@@ -11,9 +11,8 @@ from raachem.file_creator.gjf import gjf_gen, xyz_insert, validate_gjf
 from raachem.file_creator.svg import vector_graph
 from raachem.file_creator.xyz import gjf_to_xyz, log_to_xyz, log_to_xyz_scan, log_freq_xyz, superimpose_alg, geodes_int
 from raachem.file_creator.deploy_scripts import deploy
-from raachem.util.gen_purp import file_weeder, mv_up_folder, Var
+from raachem.util.gen_purp import file_weeder, mv_up_folder, preferences
 ###############################INTERFACE##################################
-preferences = Var()
 def user_interface_1():#INITIAL
 	while True:
 		print("Chose an option:")
@@ -35,7 +34,7 @@ def user_interface_1():#INITIAL
 		elif option == "4":	log_to_xyz_scan(file_weeder([".log"]))
 		elif option == "5":	xyz_insert(file_weeder([".xyz"]))
 		elif option == "6": e_analysis(file_weeder([".log"]))
-		elif option == "7": Var().set_variables()
+		elif option == "7":	preferences.set_variables()
 		elif option == "8": deploy()
 		elif option == "9":	user_interface_2()
 		else: print("Invalid input. Could not process request!")

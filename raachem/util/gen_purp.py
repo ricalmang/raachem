@@ -104,7 +104,7 @@ class Var:
 	def __init__(self):
 		self.heimdall_user = "heimdall_user"
 		self.heimdall_mail = "heimdall_mail"
-		self.heimdall_notification = "heimdall_notification"
+		self.heimdall_notification = False
 		self.aguia_user = "aguia_user"
 		self.athene_user = "athene_user"
 		self.sub_s_name = "sub_s_name"
@@ -157,7 +157,7 @@ class Var:
 				if len(value.split()) != 1:
 					print("Variable name can neither be empty nor contain spaces!")
 					continue
-				elif variables[option] in ["gjf_overwrite","folder_op"]:
+				elif variables[option] in ["gjf_overwrite","folder_op","heimdall_notification"]:
 					value = "true" if str(value).lower() in ["yes", "true"] else "false"
 				elif variables[option] == "heavy_atom":
 					value = value if value.isdigit() else str(self.heavy_atom)
@@ -185,4 +185,7 @@ class Var:
 		otput.append("#GAUSSIAN FILE EXTENSION")
 		otput.append("gauss_ext = {}".format(self.gauss_ext))
 		w_any(otput, write_mod="w", filename="user.txt", folder=conf_dir)
+		global preferences
+		preferences = Var()
 
+preferences = Var()

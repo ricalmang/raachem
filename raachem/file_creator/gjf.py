@@ -3,7 +3,7 @@ from difflib import SequenceMatcher
 from raachem.file_class.xyz import XyzFile
 from raachem.file_class.gjf import GjfFile
 from raachem.util.constants import element_radii, keywords,cf, elements
-from raachem.util.gen_purp import file_weeder, read_item, Var, sel_files
+from raachem.util.gen_purp import file_weeder, read_item, preferences, sel_files
 
 def gjf_gen(weeded_list):
 	def submit_parameters(weeded_list):
@@ -64,13 +64,12 @@ def gjf_gen(weeded_list):
 			print("The following line is required on the .GAUSSIAN file:\n=====WILL BE GEOMETRY BLOCK=====\n")
 			return
 	def save_gjf(weeded_list,parameters,index):
-		variables = Var()
-		heavy_e, gjf_overwrite, folder_op = [variables.heavy_atom,variables.gjf_overwrite,variables.folder_op]
+		heavy_e, gjf_overwrite, folder_op = [preferences.heavy_atom,preferences.gjf_overwrite,preferences.folder_op]
 		if not folder_op: weeded_list = sel_files(weeded_list)
 		if weeded_list == False: return
 		for i in weeded_list:
-			if os.path.isfile(os.path.join(cf,(i.replace(".xyz",variables.gauss_ext)))) and not gjf_overwrite:
-				print(i.replace(".xyz",variables.gauss_ext) + " already exist on current directory!")
+			if os.path.isfile(os.path.join(cf,(i.replace(".xyz",preferences.gauss_ext)))) and not gjf_overwrite:
+				print(i.replace(".xyz",preferences.gauss_ext) + " already exist on current directory!")
 				continue
 			xyz = XyzFile(read_item(i))
 			gjf_out=[]
@@ -138,13 +137,12 @@ def gjf_gen(weeded_list):
 								rm_lines.append(len(gjf_out)+1)
 				gjf_out.append(line.replace("FILENAME",i.replace(".xyz",""))+"\n")
 			gjf_out.append("\n")
-			with open(os.path.join(cf,(i.replace(".xyz",variables.gauss_ext))),"w") as gjf_file:
+			with open(os.path.join(cf,(i.replace(".xyz",preferences.gauss_ext))),"w") as gjf_file:
 				for line in [i for idx,i in enumerate(gjf_out) if idx not in rm_lines]: gjf_file.write(line)
-			print(i.replace(".xyz",variables.gauss_ext)," created!")
+			print(i.replace(".xyz",preferences.gauss_ext)," created!")
 		return
 	submit_parameters(weeded_list)
 def xyz_insert(weeded_list):
-	preferences = Var()
 	if os.path.exists(os.path.join(cf,"gaussian_input_files")):
 		print ("\ngaussian_input_files directory already exists in current directory!\nPlease remove it and try again.\n")
 		return
@@ -161,7 +159,6 @@ def xyz_insert(weeded_list):
 	print("\nJob done!\nPlease lookup the gaussian_input_files directory\n")
 	return
 def validate_gjf(weeded_list):
-	heavy_e = Var().heavy_atom
 	if True:
 		print("---------------------------------------------------------------------------")
 		print("{:^30}{:^15}{:^10}{:^10}{:^10}".format("File","e- number","charge","multip","Validated"))
@@ -181,10 +178,10 @@ def validate_gjf(weeded_list):
 				typo_error.append([p_matches[0][0],p_matches[0][1]])
 		novel_keys.append([i for i in no_match if i not in [a[0] for a in typo_error]])
 		print(" {:<30}{:>10}{:>10}{:>10}{:^15}".format(gjf.name(),gjf.n_electrons(),gjf.charge(),gjf.multiplicity(),gjf.c_m_validate_txt()))
-		if any([gjf.basis_errors(),typo_error,gjf.ecp_errors(heavy_e),len(gjf.name().split()) != 1]):
+		if any([gjf.basis_errors(),typo_error,gjf.ecp_errors(preferences.heavy_atom),len(gjf.name().split()) != 1]):
 			print("{:>7}+----------------------------ALERT---------------------------+".format(" "))
 			for error in gjf.basis_errors(): print("{:>8}{:>60}".format("|",error+" |"))
-			for error in gjf.ecp_errors(heavy_e): print("{:>8}{:>60}".format("|",error+" |"))
+			for error in gjf.ecp_errors(preferences.heavy_atom): print("{:>8}{:>60}".format("|",error+" |"))
 			for i in typo_error: print("{:>8}{:>60}".format("|", "Is '{}' a typo of '{}'?".format(i[0],i[1]) + " |"))
 			if len(gjf.name().split()) != 1: print("{:>8}{:>60}".format("|", "Filename must not contain spaces!" + " |"))
 			print("{:>7}+-----------------------------------------------------------+".format(" "))
@@ -196,6 +193,7 @@ def validate_gjf(weeded_list):
 		print("---------------------------------------------------------------------------\n")
 	try:
 		import raapbs
+		raapbs.option()
 	except:
 		return
 
