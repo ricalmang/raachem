@@ -20,6 +20,7 @@ def deploy():
 		with open(os.path.join(scripts_dir,options[int(option)])) as file:
 			script = file.readlines()
 		script = [a.replace("sub_s_name",Var().sub_s_name) for a in script]
+		script = [a.replace(".gjf", Var().gauss_ext) for a in script]
 		with open((os.path.join(cf, options[int(option)])), "w", newline="\n") as file_b:
 			for line in script:
 				file_b.write(str(line))

@@ -13,15 +13,16 @@ from raachem.file_creator.xyz import gjf_to_xyz, log_to_xyz, log_to_xyz_scan, lo
 from raachem.file_creator.deploy_scripts import deploy
 from raachem.util.gen_purp import file_weeder, mv_up_folder, Var
 ###############################INTERFACE##################################
+preferences = Var()
 def user_interface_1():#INITIAL
 	while True:
 		print("Chose an option:")
 		print("0 - Exit")
 		print("1 - Create .xyz files from .log files")
-		print("2 - Create .gjf files from .xyz files")
-		print("3 - Create .pbs files and a submission script from .gjf files")
+		print("2 - Create {} files from .xyz files".format(preferences.gauss_ext))
+		print("3 - Create .pbs files and a submission script from {} files".format(preferences.gauss_ext))
 		print("4 - IRC or SCAN analysis")
-		print("5 - Insert .xyz geometries into the corresponding .gjf files")
+		print("5 - Insert .xyz geometries into the corresponding {} files".format(preferences.gauss_ext))
 		print("6 - Extract free energies from .log files")
 		print("7 - Configure")
 		print("8 - Deploy script")
@@ -30,7 +31,7 @@ def user_interface_1():#INITIAL
 		if   option == "0": exit(print("ok"))
 		elif option == "1": log_to_xyz(file_weeder([".log"]))
 		elif option == "2": gjf_gen(file_weeder([".xyz"]))
-		elif option == "3":	validate_gjf(file_weeder([".gjf"]))
+		elif option == "3":	validate_gjf(file_weeder([preferences.gauss_ext]))
 		elif option == "4":	log_to_xyz_scan(file_weeder([".log"]))
 		elif option == "5":	xyz_insert(file_weeder([".xyz"]))
 		elif option == "6": e_analysis(file_weeder([".log"]))
@@ -49,7 +50,7 @@ def user_interface_2():#MORE OPTIONS
 		print("5 - Superimpose two xyz files")
 		print("6 - Generate solvated .xyz's")
 		print("7 - Deduplicate .log files")
-		print("8 - Create .xyz files from .gjf files")
+		print("8 - Create .xyz files from {} files".format(preferences.gauss_ext))
 		print("9 - Analyze log files in current and sub directories")
 		option=input()
 		if   option == '0': user_interface_1()
@@ -60,7 +61,7 @@ def user_interface_2():#MORE OPTIONS
 		elif option == "5":	superimpose_alg()
 		elif option == "6": geodes_int()
 		elif option == "7":	deduplicate()
-		elif option == "8": gjf_to_xyz(file_weeder([".gjf"]))
+		elif option == "8": gjf_to_xyz(file_weeder([preferences.gauss_ext]))
 		elif option == "9":	csv_e_analysis()
 		else: print("Invalid input. Could not process request!")
 user_interface_1()

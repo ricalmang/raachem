@@ -1,7 +1,7 @@
 import os, shutil
 from raachem.file_class.log import LogFile
 from raachem.util.constants import cf
-from raachem.util.gen_purp import w_any, file_weeder, read_item, timeit
+from raachem.util.gen_purp import w_any, file_weeder, read_item, Var
 
 
 def e_analysis(weeded_list):
@@ -68,7 +68,7 @@ def csv_e_analysis():
 			if file.endswith(".log"):
 				logs.append(os.path.join(folder, file))
 		return logs
-
+	preferences = Var()
 	csv_list = []
 	files = evaluate_list(cf)
 	last = len(files)
@@ -98,7 +98,7 @@ def csv_e_analysis():
 			line[4],
 			line[5],
 			os.path.basename(line[6]),
-			'=HYPERLINK("{}";"Link")'.format(line[6]).replace(".log", ".gjf") if os.path.isfile(line[6].replace(".log", ".gjf")) else "-",
+			'=HYPERLINK("{}";"Link")'.format(line[6]).replace(".log", preferences.gauss_ext) if os.path.isfile(line[6].replace(".log", preferences.gauss_ext)) else "-",
 			'=HYPERLINK("{}";"Link")'.format(line[6]),
 			'=HYPERLINK("{}";"Link")'.format(line[7]),
 			os.path.relpath(line[7], cf),

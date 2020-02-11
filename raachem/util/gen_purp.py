@@ -4,7 +4,7 @@ conf_dir = os.path.dirname(__file__)
 conf_file = os.path.join(conf_dir, "user.txt")
 
 def read_item(file_name=None, promp=False, extension=None, cf=cf):
-	"""Reads an xyz, gjf or log item and returns a list of its contents ready for class instantiation"""
+	"""Reads an .xyz, .gjf, .com or .log item and returns a list of its contents ready for class instantiation"""
 	if extension is None:
 		extension = [".xyz"]
 	if promp != False:
@@ -57,7 +57,7 @@ def is_str_float(i):
 def mv_up_folder():
 	"""Move files with a chossen extension up a folder"""
 	while True:
-		extensions = [[0, "return"], ["1", ".log"], ["2", ".gjf"], ["3", ".xyz"]]
+		extensions = [[0, "return"], ["1", ".log"], ["2", ".gjf"],["2", ".com"],["3", ".xyz"]]
 		print("Select a file extension to move up a folder")
 		for idx, ext in enumerate(extensions):
 			if idx == 0:
@@ -111,6 +111,7 @@ class Var:
 		self.heavy_atom = 36
 		self.gjf_overwrite = False
 		self.folder_op = True
+		self.gauss_ext = ".com"
 		self.read_variables()
 	def read_variables(self):
 		if not os.path.isfile(conf_file): return
@@ -124,6 +125,7 @@ class Var:
 			elif a[0] == "heavy_e": setattr(self,a[0], int(a[1]) if a[1].isdigit() else 36)
 			elif a[0] == "gjf_overwrite": setattr(self,a[0], a[1].lower() == "true")
 			elif a[0] == "folder_op": setattr(self, a[0], a[1].lower() == "true")
+			elif a[0] == "gauss_ext": setattr(self, a[0], a[1].lower() if a[1].lower() in [".gjf",".com"] else ".com")
 			else: setattr(self,a[0],a[1])
 		return
 	def set_variables(self):
@@ -141,8 +143,9 @@ class Var:
 			print("7 - ECP IS ADVISED FOR ELEMENTS LARGER THAN: {}".format(self.heavy_atom))
 			print("8 - OVERWRITE .GJF FILES WITH NO PROMP: {}".format("Yes" if self.gjf_overwrite else "No"))
 			print("9 - AUTO OPERATE ON ALL FILES IN THE CWD: {}".format("Yes" if self.folder_op else "No"))
+			print("10 - GAUSSIAN INPUT FILE EXTENSION: '{}'".format(self.gauss_ext))
 			variables = {"0":None,"1":"heimdall_user","2":"heimdall_mail","3":"heimdall_notification","4":"aguia_user",
-						"5":"athene_user","6":"sub_s_name","7":"heavy_atom","8":"gjf_overwrite","9":"folder_op"}
+						"5":"athene_user","6":"sub_s_name","7":"heavy_atom","8":"gjf_overwrite","9":"folder_op","10":"gauss_ext"}
 			while True:
 				option = input().strip()
 				if option in variables:	break
@@ -179,5 +182,7 @@ class Var:
 		otput.append("gjf_overwrite = {}".format(self.gjf_overwrite))
 		otput.append("#OPERATE ON ALL FILES IN FOLDER?")
 		otput.append("folder_op = {}".format(self.folder_op))
+		otput.append("#GAUSSIAN FILE EXTENSION")
+		otput.append("gauss_ext = {}".format(self.gauss_ext))
 		w_any(otput, write_mod="w", filename="user.txt", folder=conf_dir)
 

@@ -69,8 +69,8 @@ def gjf_gen(weeded_list):
 		if not folder_op: weeded_list = sel_files(weeded_list)
 		if weeded_list == False: return
 		for i in weeded_list:
-			if os.path.isfile(os.path.join(cf,(i.replace(".xyz",".gjf")))) and not gjf_overwrite:
-				print(i.replace(".xyz",".gjf") + " already exist on current directory!")
+			if os.path.isfile(os.path.join(cf,(i.replace(".xyz",variables.gauss_ext)))) and not gjf_overwrite:
+				print(i.replace(".xyz",variables.gauss_ext) + " already exist on current directory!")
 				continue
 			xyz = XyzFile(read_item(i))
 			gjf_out=[]
@@ -138,12 +138,13 @@ def gjf_gen(weeded_list):
 								rm_lines.append(len(gjf_out)+1)
 				gjf_out.append(line.replace("FILENAME",i.replace(".xyz",""))+"\n")
 			gjf_out.append("\n")
-			with open(os.path.join(cf,(i.replace(".xyz",".gjf"))),"w") as gjf_file:
+			with open(os.path.join(cf,(i.replace(".xyz",variables.gauss_ext))),"w") as gjf_file:
 				for line in [i for idx,i in enumerate(gjf_out) if idx not in rm_lines]: gjf_file.write(line)
-			print(i.replace(".xyz",".gjf")," created!")
+			print(i.replace(".xyz",variables.gauss_ext)," created!")
 		return
 	submit_parameters(weeded_list)
 def xyz_insert(weeded_list):
+	preferences = Var()
 	if os.path.exists(os.path.join(cf,"gaussian_input_files")):
 		print ("\ngaussian_input_files directory already exists in current directory!\nPlease remove it and try again.\n")
 		return
@@ -151,12 +152,12 @@ def xyz_insert(weeded_list):
 	for i in weeded_list:
 		try:
 			xyz = XyzFile(read_item(i))
-			gjf = GjfFile(read_item(i.replace(".xyz",".gjf")))
-			with open(os.path.join(cf,os.path.join("gaussian_input_files",i.replace(".xyz",".gjf"))),"w") as gjf_out:
+			gjf = GjfFile(read_item(i.replace(".xyz",preferences.gauss_ext)))
+			with open(os.path.join(cf,os.path.join("gaussian_input_files",i.replace(".xyz",preferences.gauss_ext))),"w") as gjf_out:
 				for line in gjf.list[1:gjf.c_m_idx()+1]: gjf_out.write(line+"\n")
 				for line in xyz.form_cord_block(): gjf_out.write(line+"\n")
 				for line in gjf.list[gjf.end_cord_idx()-1:]: gjf_out.write(line+"\n")
-		except FileNotFoundError: print("file " + i.replace(".xyz",".gjf") + " could not be found!")
+		except FileNotFoundError: print("file " + i.replace(".xyz",preferences.gauss_ext) + " could not be found!")
 	print("\nJob done!\nPlease lookup the gaussian_input_files directory\n")
 	return
 def validate_gjf(weeded_list):
