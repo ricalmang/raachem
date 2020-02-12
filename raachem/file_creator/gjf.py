@@ -191,10 +191,7 @@ def validate_gjf(weeded_list):
 		print("The following keys were not recognized:")
 		print(novel_keys)
 		print("---------------------------------------------------------------------------\n")
-	try:
-		import raapbs
-		raapbs.option()
-	except:
-		return
+	try: import raapbs; raapbs.option()
+	except: return
 
 

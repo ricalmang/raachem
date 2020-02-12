@@ -1,7 +1,7 @@
 import os, shutil
 from raachem.file_class.log import LogFile
 from raachem.util.constants import cf
-from raachem.util.gen_purp import w_any, file_weeder, read_item, preferences
+from raachem.util.gen_purp import file_weeder, read_item, preferences
 
 
 def e_analysis(weeded_list):
@@ -14,34 +14,28 @@ def e_analysis(weeded_list):
 	for i in weeded_list:
 		log = LogFile(read_item(i))
 		t = log.first_thermal()
-		try:
-			last_SCF = log.scf_done()[-1][-1]
-		except:
-			last_SCF = "None"
-		if t == False:
-			out.append("{:<30} no_thermo_data_found_Last_SCF: {:>20}".format(i, last_SCF))
-			continue
+		try: last_SCF = log.scf_done()[-1][-1]
+		except: last_SCF = "None"
+		if t == False: out.append("{:<30} no_thermo_data_found_Last_SCF: {:>20}".format(i, last_SCF)); continue
 		out.append("{:<30}{:>20}{:>20}{:>20}".format(i, t[7], t[3], last_SCF))
 		rel_e.append([i, float(t[7]) * 627.5095, float(last_SCF) * 627.5095, float(t[3]) * 627.5095])
 	if len(rel_e) > 1:
-		print(
-			"\nDo you want the free energyes to be reported relative to which item? (enter 0 if you don't want to analyze them)\n")
+		print("Do you want the free energyes to be reported relative to which item?")
+		print("Enter 0 if you don't want to analyze them)")
 		for idx, entry in enumerate(rel_e):
 			print(" {:<4}{:<20}{:>25}".format(idx + 1, entry[0], round(entry[1], 2)))
-		try:
-			option = int(input()) - 1
-			if option in range(len(rel_e)):
-				out.append("\nFree energies relative to {}, (Name,G,H,TC):".format(rel_e[option][0]))
-				for i in rel_e:
-					out.append("{:<26}{:>26}{:>10}{:>10}".format(i[0], round(i[1] - rel_e[option][1], 2),
-																 round(i[2] - rel_e[option][2], 2),
-																 round(i[3] - rel_e[option][3], 2)))
-				out.append("\n")
-			elif option == 0:
-				print("Leaving analysis\n")
-		except:
-			print("Could notunderstand request")
-	w_any(out, "w", file_name)
+		while True:
+			option = input()
+			if option in [range(len(rel_e)+1)]: option = int(option); break
+			else: print("Could notunderstand request")
+		if option == 0: print("Leaving analysis\n")
+		else:
+			out.append("\nFree energies relative to {}, (Name,G,H,TC):".format(rel_e[option-1][0]))
+			for i in rel_e:
+				a = [i[0], *[round(i[n] - rel_e[option-1][n], 2) for n in [1,2,3]]]
+				out.append("{:<26}{:>26}{:>10}{:>10}".format(*a))
+			out.append("\n")
+	with open(file_name,mode="w",newline="\n") as file: file.write("\n".join(out))
 	print("\nDone! \nPlease lookup:\n\n" + os.path.join(cf, file_name), "\n")
 
 
@@ -54,19 +48,14 @@ def rel_scf(list=False):
 	energies.sort(key=lambda x: x[1])
 	min_e = energies[0][1]
 	energies = [[i[0], (i[1] - min_e) * 627.509, i[2]] for i in energies]
-	if list == False:
-		print("\n".join(["{:>30}{:>15f}{:>5}".format(*l) for l in energies]))
-	elif list == True:
-		return energies
-
+	if list == False: print("\n".join(["{:>30}{:>15f}{:>5}".format(*l) for l in energies]))
+	elif list == True: return energies
 
 def csv_e_analysis():
 	def evaluate_list(folder, logs=[]):
 		for file in os.listdir(folder):
-			if os.path.isdir(os.path.join(folder, file)):
-				evaluate_list(os.path.join(folder, file), logs)
-			if file.endswith(".log"):
-				logs.append(os.path.join(folder, file))
+			if os.path.isdir(os.path.join(folder, file)): evaluate_list(os.path.join(folder, file), logs)
+			elif file.endswith(".log"): logs.append(os.path.join(folder, file))
 		return logs
 	csv_list = []
 	files = evaluate_list(cf)
@@ -87,7 +76,6 @@ def csv_e_analysis():
 		else: print("\rEvaluation done ({}/{}), saving svg file...".format(i+1,last))
 	if not csv_list: return print("No .log files in {} directory".format(cf))
 	csv_list.sort(key=lambda x: x[0], reverse=True)
-
 	csv_code = ["Free energy, +A, +B, +C, +D, -E, -F, Complex, Rel_E,-Freq ," +
 				"TYP , Filename , INP , LOG , FOLD , Folder name, Done?, last_SCF, Hentalphy"]
 	for idx,line in enumerate(csv_list):
@@ -105,21 +93,18 @@ def csv_e_analysis():
 			line[3],
 			line[2]]
 		csv_code.append(",".join(row))
-	w_any(csv_code, write_mod="w", filename="linked_analysis.csv")
+	with open("linked_analysis.csv", mode="w",newline="\n") as file: file.write("\n".join(csv_code))
 	print("Done, please lookup:\n{}".format(os.path.join(cf, "linked_analysis.csv")))
 
 def deduplicate():
 	print("Analyzing energies...")
 	energies = [[b.name(),float(b.scf_done()[-1][1]),b.normal_termin(),b.last_xyz_obj()] for i in file_weeder([".log"]) for b in [LogFile(read_item(i))]]
 	unique = energies
-	if not unique:
-		print("No log files to be analyzed")
-		return
+	if not unique: print("No log files to be analyzed"); return
 	black_list, folder_mov = [], []
 	print("Starting analysis...")
 	for file in sorted(unique,key=lambda x: (x[2],-x[1]),reverse=True):
-		if file[0] in black_list:
-			continue
+		if file[0] in black_list: continue
 		black_list.append(file[0])
 		sim_en = [i for i in unique if i[0] not in black_list and  i[1] + 1 > file[1] > i[1] - 1]
 		if sim_en:
@@ -129,8 +114,7 @@ def deduplicate():
 					print("{} is a duplicate of {}".format(obj[3].name(), file[3].name()))
 					duplicates.append(obj[3].name())
 					black_list.append(obj[3].name())
-			if duplicates:
-				folder_mov.append([file[3].name(),duplicates])
+			if duplicates: folder_mov.append([file[3].name(),duplicates])
 	for folder in folder_mov:
 		subfolder = os.path.join(cf,"duplicates_of_{}".format(folder[0].replace(".log","")))
 		try: os.mkdir(subfolder)

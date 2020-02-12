@@ -1,5 +1,5 @@
 import os, random, math
-from raachem.util.gen_purp import read_item, w_any, file_weeder, cf
+from raachem.util.gen_purp import read_item, file_weeder, cf
 from raachem.file_class.log import LogFile
 from raachem.file_class.xyz import XyzFile
 
@@ -37,7 +37,8 @@ def log_to_xyz_scan(weeded_list):
 				collumn[1]= "|"*int(90*((float(entry)-min_e)/(max_e-min_e)))
 				collumn[2]= (float(entry)-min_e)*627.5
 				print("{:<5}{:<90}  {:>6.2f}".format(collumn[0],collumn[1],collumn[2]))
-			w_any([a for i in xyzs for a in i.return_print()],"w",weeded_list[item].replace(".log","_scan_traject.xyz"))
+			file_name = weeded_list[item].replace(".log","_scan_traject.xyz")
+			with open(file_name,mode="w",newline="\n") as file: file.write("\n".join([a for i in xyzs for a in i.return_print()]))
 
 def log_freq_xyz(weeded_list):
 	for i in weeded_list:

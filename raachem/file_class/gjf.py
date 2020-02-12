@@ -4,7 +4,7 @@ class GjfFile:
 	def __init__(self,file_content):
 		self.list = file_content
 	def name(self):
-		if len(self.list[0]) == 0: raise Exception(".gjf Object has no name")
+		if len(self.list[0]) == 0: raise Exception(".gjf or .com object has no name")
 		return self.list[0]
 	def empty_line_idxs(self):
 		return [idx for idx,line in enumerate(self.list) if line.split() == []]
@@ -13,7 +13,7 @@ class GjfFile:
 	def route_idx(self):
 		for idx,line in enumerate(self.list):
 			if line.strip().startswith("#"):return idx
-		else: raise Exception("A route section (#) should be specifiedfor .gjf files")
+		raise Exception("A route section (#) should be specified for .gjf or .com files")
 	def route_text(self):
 		return " ".join(self.list[self.route_idx():self.title_idx()])
 	def title_idx(self):

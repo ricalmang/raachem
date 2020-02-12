@@ -3,8 +3,8 @@ cf=os.getcwd()
 
 def read_item(file_name=None, promp=False, extension=None, cf=cf):
 	"""Reads an .xyz, .gjf, .com or .log item and returns a list of its contents ready for class instantiation"""
-	if extension is None: extension = [".xyz"]
 	if promp != False:
+		if extension is None: extension = [".xyz"]
 		print(promp)
 		files = file_weeder(extension)
 		if len(files) == 0: print("Sorry no such files in current directory!"); return []
@@ -23,18 +23,12 @@ def file_weeder(ext_to_weed,cf=cf, promp=True):
 	for extension in ext_to_weed:
 		matching = [s for s in fulllist if extension in s]
 		for match in matching: weeded_list.append(match)
-	if promp:
-		if len(weeded_list) == 0:
-			print("No {} files found in current directory!".format("or".join(ext_to_weed)))
-			print(cf)
-			return []
+	if promp and len(weeded_list) == 0:
+		print("No {} files found in current directory!".format("or".join(ext_to_weed)))
+		print(cf)
+		return []
 	return sorted(weeded_list)
-def w_any(lines,write_mod="a",filename="alg_log.txt",folder=cf):
-	"""Generally wites a file"""
-	with open((os.path.join(folder,filename)),write_mod,newline= "\n") as activity_log:
-		for line in lines:
-			activity_log.write(str(line))
-			activity_log.write("\n")
+
 def is_str_float(i):
 	"""Check if a string can be converted into a float"""
 	try: float(i); return True
@@ -46,10 +40,8 @@ def mv_up_folder():
 		extensions = [[0, "return"], ["1", ".log"], ["2", ".gjf"],["2", ".com"],["3", ".xyz"]]
 		print("Select a file extension to move up a folder")
 		for idx, ext in enumerate(extensions):
-			if idx == 0:
-				print("0   - Cancel request")
-			else:
-				print("{:<3} - {:>10}".format(ext[0], ext[1]))
+			if idx == 0: print("0   - Cancel request")
+			else: print("{:<3} - {:>10}".format(ext[0], ext[1]))
 		extension = {str(i[0]): i[1] for i in extensions}.get(input(), None)
 		print(extension)
 		if extension == "return": return
@@ -95,10 +87,11 @@ class Var:
 		self.gjf_overwrite = False
 		self.folder_op = True
 		self.gauss_ext = ".com"
+		self.comp_software = "gaussian"
 		self.read_variables()
 	def read_variables(self,conf_file=conf_file):
 		if not os.path.isfile(conf_file): return
-		with open(conf_file) as file: options = file.readlines()
+		with open(conf_file,mode="r") as file: options = file.readlines()
 		options = [a.replace("=", " ").split() for a in options]
 		options = [a for a in options if len(a) == 2]
 		for a in options:
@@ -108,6 +101,7 @@ class Var:
 			elif a[0] == "gjf_overwrite": setattr(self,a[0], a[1].lower() == "true")
 			elif a[0] == "folder_op": setattr(self, a[0], a[1].lower() == "true")
 			elif a[0] == "gauss_ext": setattr(self, a[0], a[1].lower() if a[1].lower() in [".gjf",".com"] else ".com")
+			elif a[0] == "comp_software": setattr(self, a[0], a[1].lower() if a[1].lower() == "orca" else "gaussian")
 			else: setattr(self,a[0],a[1])
 		return
 	def set_variables(self):
@@ -126,8 +120,10 @@ class Var:
 			print("8 - OVERWRITE .GJF FILES WITH NO PROMP: {}".format("Yes" if self.gjf_overwrite else "No"))
 			print("9 - AUTO OPERATE ON ALL FILES IN THE CWD: {}".format("Yes" if self.folder_op else "No"))
 			print("10 - GAUSSIAN INPUT FILE EXTENSION: '{}'".format(self.gauss_ext))
+			print("11 - COMPUTATIONAL CHEMISTRY SOFTWARE (orca/gaussian): '{}'".format(self.comp_software))
 			variables = {"0":None,"1":"heimdall_user","2":"heimdall_mail","3":"heimdall_notification","4":"aguia_user",
-						"5":"athene_user","6":"sub_s_name","7":"heavy_atom","8":"gjf_overwrite","9":"folder_op","10":"gauss_ext"}
+						 "5":"athene_user","6":"sub_s_name","7":"heavy_atom","8":"gjf_overwrite","9":"folder_op",
+						 "10":"gauss_ext", "11":"comp_software"}
 			while True:
 				option = input().strip()
 				if option in variables:	break
@@ -143,30 +139,14 @@ class Var:
 					value = "true" if str(value).lower() in ["yes", "true"] else "false"
 				elif variables[option] == "heavy_atom":
 					value = value if value.isdigit() else str(self.heavy_atom)
+				elif variables[option] == "comp_software":
+					value = value.lower() if value.lower() == "orca" else "gaussian"
 				setattr(self,variables[option],value)
 				break
 			self.write_save()
-	def write_save(self,conf_dir=conf_dir):
-		otput = []
-		otput.append("#HEIMDALL VARIABLES")
-		otput.append("heimdall_user = {}".format(self.heimdall_user))
-		otput.append("heimdall_mail = {}".format(self.heimdall_mail))
-		otput.append("heimdall_notification = {}".format(self.heimdall_notification))
-		otput.append("#AGUIA VARIABLES")
-		otput.append("aguia_user = {}".format(self.aguia_user))
-		otput.append("#ATHENE VARIABLES")
-		otput.append("athene_user = {}".format(self.athene_user))
-		otput.append("#SUBMISSION SCRIPT NAME")
-		otput.append("sub_s_name = {}".format(self.sub_s_name))
-		otput.append("#ATOMS WITH RECOMMENDED ECP ARE HEAVIER THAN:")
-		otput.append("heavy_e = {}".format(self.heavy_atom))
-		otput.append("#SHOULD .GJF FILES BE OVERWRITTEN WITH NO PROMP?")
-		otput.append("gjf_overwrite = {}".format(self.gjf_overwrite))
-		otput.append("#OPERATE ON ALL FILES IN FOLDER?")
-		otput.append("folder_op = {}".format(self.folder_op))
-		otput.append("#GAUSSIAN FILE EXTENSION")
-		otput.append("gauss_ext = {}".format(self.gauss_ext))
-		w_any(otput, write_mod="w", filename="user.txt", folder=conf_dir)
+	def write_save(self,conf_file=conf_file):
+		output = "\n".join(["{} = {}".format(a,getattr(self,a,)) for a in vars(self)])
+		with open(conf_file, mode="w", newline="\n") as file: file.write(output)
 		global preferences
 		preferences = Var()
 
