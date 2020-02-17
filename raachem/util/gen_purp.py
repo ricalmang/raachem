@@ -97,7 +97,7 @@ class Var:
 		for a in options:
 			if a[0] not in vars(self): continue
 			elif a[0] == "heimdall_notification": setattr(self,a[0], a[1].lower() == "true")
-			elif a[0] == "heavy_e": setattr(self,a[0], int(a[1]) if a[1].isdigit() else 36)
+			elif a[0] == "heavy_atom": setattr(self,a[0], int(a[1]) if a[1].isdigit() else 36)
 			elif a[0] == "gjf_overwrite": setattr(self,a[0], a[1].lower() == "true")
 			elif a[0] == "folder_op": setattr(self, a[0], a[1].lower() == "true")
 			elif a[0] == "gauss_ext": setattr(self, a[0], a[1].lower() if a[1].lower() in [".gjf",".com"] else ".com")
@@ -138,7 +138,7 @@ class Var:
 				elif variables[option] in ["gjf_overwrite","folder_op","heimdall_notification"]:
 					value = "true" if str(value).lower() in ["yes", "true"] else "false"
 				elif variables[option] == "heavy_atom":
-					value = value if value.isdigit() else str(self.heavy_atom)
+					value = int(value) if value.isdigit() else self.heavy_atom
 				elif variables[option] == "comp_software":
 					value = value.lower() if value.lower() == "orca" else "gaussian"
 				setattr(self,variables[option],value)

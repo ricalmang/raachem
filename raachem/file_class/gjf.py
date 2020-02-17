@@ -3,6 +3,7 @@ from raachem.util.constants import elements
 class GjfFile:
 	def __init__(self,file_content):
 		self.list = file_content
+		self.return_print = "\n".join(self.list[1:])
 	def name(self):
 		if len(self.list[0]) == 0: raise Exception(".gjf or .com object has no name")
 		return self.list[0]
@@ -124,3 +125,9 @@ class GjfFile:
 		return None
 	def link_one_idxs(self):
 		return [idx for idx,l in enumerate(self.list) if "--link1--" in l.lower()]
+	def replace_cord(self, xyz_obj):
+		new = []
+		for line in self.list[0:self.c_m_idx() + 1]: new.append(line)
+		for line in xyz_obj.form_cord_block(): new.append(line)
+		for line in self.list[self.end_cord_idx()-1:]: new.append(line)
+		return GjfFile(new)
