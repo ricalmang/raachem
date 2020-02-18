@@ -9,8 +9,6 @@ class InpFile:
 		self.list = file_content
 		self.list_l = [a.split() for a in file_content]
 		self.str_l = [a.replace(" ","") for a in self.list]
-		self.name = self.str_l[0]
-		if len(self.name) == 0:	raise Exception("Object has no name")
 		self.comt_ls = [i for i,a in enumerate(self.str_l) if a.startswith("#")]
 		self.keys_ls = [i for i,a in enumerate(self.str_l) if a.startswith("!")]
 		self.ljob_ls = [i for i,a in enumerate(self.str_l) if a.startswith("%base")]
@@ -28,12 +26,31 @@ class InpFile:
 		self.n_atoms = len(self.atoms) if self.cord_ls else None
 		self.block_keys = self._block_keys()
 		self.n_proc = self._n_proc()
-		self.charge = self._charge_multiplicity()[0]
-		self.mult = self._charge_multiplicity()[1]
-		self.n_electrons = sum(elements.index(e) for e in self.atoms) - self.charge
-		self.c_m_validate = self.n_electrons % 2 == self.mult % 2  # True if valid, otherwise False
+		self.c_m_validate = self.n_electrons % 2 == self.multiplicity % 2  # True if valid, otherwise False
 		self.c_m_validate_txt = "Yes" if self.c_m_validate else "--NO!--"
 		self.return_print = "\n".join(self.list[1:])
+	@property
+	def name(self):
+		if len(self.list[0]) == 0: raise Exception(".inp object has no name")
+		return self.list[0]
+	@property
+	def charge(self):
+		return self._charge_multiplicity()[0]
+	@property
+	def multiplicity(self):
+		return self._charge_multiplicity()[1]
+	@property
+	def n_electrons(self):
+		return sum(elements.index(e) for e in self.atoms) - self.charge
+	@property
+	def all_elements(self):
+		return [a[0] for a in self.list_l[self.start_xyz+1:self.end_xyz]] if self.cord_ls else None
+	@property
+	def elements(self):
+		return list(dict.fromkeys(self.all_elements))
+
+
+
 
 	def __str__(self):
 		for line in self.list[1:]: print(line)

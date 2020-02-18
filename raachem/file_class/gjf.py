@@ -4,13 +4,29 @@ class GjfFile:
 	def __init__(self,file_content):
 		self.list = file_content
 		self.return_print = "\n".join(self.list[1:])
+		self.empty_line_idxs = [i for i,a in enumerate(self.list) if a.split() == []]
+		self.asterisk_line_idxs = [idx for idx,line in enumerate(self.list) if line.split() == ["****"]]
+
+	@property
 	def name(self):
 		if len(self.list[0]) == 0: raise Exception(".gjf or .com object has no name")
 		return self.list[0]
-	def empty_line_idxs(self):
-		return [idx for idx,line in enumerate(self.list) if line.split() == []]
-	def asterisk_line_idxs(self):
-		return [idx for idx,line in enumerate(self.list) if line.split() == ["****"]]
+	@property
+	def charge(self):
+		return int(self.list[self.c_m_idx()].split()[0])
+	@property
+	def multiplicity(self):
+		return int(self.list[self.c_m_idx()].split()[1])
+	@property
+	def n_electrons(self):
+		return sum(elements.index(e) for e in self.all_elements) - self.charge
+	@property
+	def all_elements(self):
+		return [line[0] for line in self.cord_block()]
+	@property
+	def elements(self):
+		return list(dict.fromkeys(self.all_elements))
+
 	def route_idx(self):
 		for idx,line in enumerate(self.list):
 			if line.strip().startswith("#"):return idx
@@ -28,10 +44,7 @@ class GjfFile:
 		for idx,line in enumerate(self.list):
 			if idx < self.c_m_idx(): continue
 			if line.split() == []: return idx+1
-	def charge(self):
-		return int(self.list[self.c_m_idx()].split()[0])
-	def multiplicity(self):
-		return int(self.list[self.c_m_idx()].split()[1])
+
 	def cord_block(self):
 		cordinates = []
 		for line in self.list[self.c_m_idx()+1:]:
@@ -45,12 +58,8 @@ class GjfFile:
 		return ["{:<5}{:>20f}{:>20f}{:>20f}".format(x[0],*[round(float(x[a]),6) for a in [1,2,3]]) for x in self.cord_block()]
 	def cord_strip(self):
 		return [line[1:] for line in self.cord_block()]
-	def all_elements(self):
-		return [line[0] for line in self.cord_block()]
-	def elements(self):
-		return list(dict.fromkeys(self.all_elements()))
-	def n_electrons(self):
-		return sum(elements.index(e) for e in self.all_elements()) - self.charge()
+
+
 	def c_m_validate(self):
 		return not self.n_electrons()%2 == self.multiplicity()%2
 	def c_m_validate_txt(self):
@@ -59,8 +68,8 @@ class GjfFile:
 		return any(i in self.route_text().lower() for i in ["/gen", "gen ","genecp"])
 	def declared_basis_lines(self):
 		if not self.gen_basis(): return None
-		idxs = [i+1 for idx,i in enumerate(self.asterisk_line_idxs()) if i < self.asterisk_line_idxs()[-1]]
-		idxs.insert(0,max(i+1 for i in self.empty_line_idxs() if  i < self.asterisk_line_idxs()[-1]))
+		idxs = [i+1 for idx,i in enumerate(self.asterisk_line_idxs) if i < self.asterisk_line_idxs[-1]]
+		idxs.insert(0,max(i+1 for i in self.empty_line_idxs if  i < self.asterisk_line_idxs[-1]))
 		return idxs
 	def declared_basis(self):
 		e_w_b = [self.list[i].split()[:-1] for i in self.declared_basis_lines()]

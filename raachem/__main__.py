@@ -7,7 +7,7 @@ def show_exception_and_exit(exc_type, exc_value, tb):
 sys.excepthook = show_exception_and_exit
 ############################RAACHEM IMPORTS###############################
 from raachem.file_creator.e_analysis import e_analysis, rel_scf, csv_e_analysis, deduplicate
-from raachem.file_creator.input import CreateInputs, xyz_insert, validate_gjf
+from raachem.file_creator.input import CreateInputs, xyz_insert, validate_input
 from raachem.file_creator.svg import vector_graph
 from raachem.file_creator.xyz import gjf_to_xyz, log_to_xyz, log_to_xyz_scan, log_freq_xyz, superimpose_alg, geodes_int
 from raachem.file_creator.deploy_scripts import deploy
@@ -35,7 +35,7 @@ def user_interface_1():#INITIAL
 		if   option == "0": exit(print("ok"))
 		elif option == "1": pass
 		elif option == "2": CreateInputs()
-		elif option == "3":	validate_gjf(file_weeder(["inp"]))
+		elif option == "3":	validate_input(file_weeder(["inp"]))
 		elif option == "4":	pass
 		elif option == "5":	xyz_insert(file_weeder([".xyz"]))
 		elif option == "6": pass
@@ -61,7 +61,7 @@ def user_interface_1():#INITIAL
 		if   option == "0": exit(print("ok"))
 		elif option == "1": log_to_xyz(file_weeder([".log"]))
 		elif option == "2": CreateInputs()
-		elif option == "3":	validate_gjf(file_weeder([preferences.gauss_ext]))
+		elif option == "3":	validate_input(file_weeder([preferences.gauss_ext]))
 		elif option == "4":	log_to_xyz_scan(file_weeder([".log"]))
 		elif option == "5":	xyz_insert(file_weeder([".xyz"]))
 		elif option == "6": e_analysis(file_weeder([".log"]))

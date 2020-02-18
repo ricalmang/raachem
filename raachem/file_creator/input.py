@@ -189,48 +189,40 @@ def xyz_insert(weeded_list):
 	print("\nJob done!\nPlease lookup the inserted_input_files directory\n")
 	return
 
-def validate_gjf(weeded_list):
+def validate_input(weeded_list):
 	print("---------------------------------------------------------------------------")
 	print("{:^30}{:^15}{:^10}{:^10}{:^10}".format("File","e- number","charge","multip","Validated"))
 	print("---------------------------------------------------------------------------")
 	novel_keys = []
 	for item in weeded_list:
-		gjf = GjfFile(read_item(item))
-		split_list = [i for i in gjf.list[1:gjf.title_idx()] if not i.lower().startswith("%chk")]
-		for x in [None,"/","(",")",",","=","%",":"]:
-			split_list = [a for b in [i.split(x) for i in split_list] for a in b if len(a) > 3]
-		no_match = [i for i in split_list if i.lower() not in [j.lower() for j in keywords] and not i[0].isdigit()]
-		typo_error = []
-		for b in no_match:
-			p_matches = [[b,i,SequenceMatcher(None,b,i).ratio()] for i in keywords if SequenceMatcher(None,b,i).ratio() > 0.6]
-			if p_matches:
-				p_matches.sort(key=lambda x: x[2])
-				typo_error.append([p_matches[0][0],p_matches[0][1]])
-		novel_keys.append([i for i in no_match if i not in [a[0] for a in typo_error]])
-		print(" {:<30}{:>10}{:>10}{:>10}{:^15}".format(gjf.name(),gjf.n_electrons(),gjf.charge(),gjf.multiplicity(),gjf.c_m_validate_txt()))
-		if any([gjf.basis_errors(),typo_error,gjf.ecp_errors(preferences.heavy_atom),len(gjf.name().split()) != 1]):
-			print("{:>7}+----------------------------ALERT---------------------------+".format(" "))
-			for error in gjf.basis_errors(): print("{:>8}{:>60}".format("|",error+" |"))
-			for error in gjf.ecp_errors(preferences.heavy_atom): print("{:>8}{:>60}".format("|",error+" |"))
-			for i in typo_error: print("{:>8}{:>60}".format("|", "Is '{}' a typo of '{}'?".format(i[0],i[1]) + " |"))
-			if len(gjf.name().split()) != 1: print("{:>8}{:>60}".format("|", "Filename must not contain spaces!" + " |"))
-			print("{:>7}+-----------------------------------------------------------+".format(" "))
+		if preferences.comp_software == "orca":	comp_input = InpFile(read_item(item))
+		else: comp_input = GjfFile(read_item(item))
+		a = (comp_input.name, comp_input.n_electrons, comp_input.charge, comp_input.multiplicity, comp_input.c_m_validate_txt())
+		print(" {:<30}{:>10}{:>10}{:>10}{:^15}".format(*a))
+		if preferences.comp_software == "gaussian":
+			split_list = [i for i in comp_input.list[1:comp_input.title_idx()] if not i.lower().startswith("%chk")]
+			for x in [None,"/","(",")",",","=","%",":"]:
+				split_list = [a for b in [i.split(x) for i in split_list] for a in b if len(a) > 3]
+			no_match = [i for i in split_list if i.lower() not in [j.lower() for j in keywords] and not i[0].isdigit()]
+			typo_error = []
+			for b in no_match:
+				p_matches = [[b,i,SequenceMatcher(None,b,i).ratio()] for i in keywords if SequenceMatcher(None,b,i).ratio() > 0.6]
+				if p_matches:
+					p_matches.sort(key=lambda x: x[2])
+					typo_error.append([p_matches[0][0],p_matches[0][1]])
+			novel_keys.append([i for i in no_match if i not in [a[0] for a in typo_error]])
+			if any([comp_input.basis_errors(),typo_error,comp_input.ecp_errors(preferences.heavy_atom),len(comp_input.name.split()) != 1]):
+				print("{:>7}+----------------------------ALERT---------------------------+".format(" "))
+				for error in comp_input.basis_errors(): print("{:>8}{:>60}".format("|",error+" |"))
+				for error in comp_input.ecp_errors(preferences.heavy_atom): print("{:>8}{:>60}".format("|",error+" |"))
+				for i in typo_error: print("{:>8}{:>60}".format("|", "Is '{}' a typo of '{}'?".format(i[0],i[1]) + " |"))
+				if len(comp_input.name.split()) != 1: print("{:>8}{:>60}".format("|", "Filename must not contain spaces!" + " |"))
+				print("{:>7}+-----------------------------------------------------------+".format(" "))
 	print("---------------------------------------------------------------------------\n")
 	novel_keys = list(dict.fromkeys([a for b in novel_keys for a in b]))
-	if novel_keys:
+	if novel_keys and preferences.comp_software == "gaussian":
 		print("The following keys were not recognized:")
 		print(novel_keys)
 		print("---------------------------------------------------------------------------\n")
-	try: import raapbs; raapbs.option()
-	except: return
-
-def validate_inp(weeded_list):
-	print("---------------------------------------------------------------------------")
-	print("{:^30}{:^15}{:^10}{:^10}{:^10}".format("File","e- number","charge","multip","Validated"))
-	print("---------------------------------------------------------------------------")
-	for item in weeded_list:
-		inp = InpFile(read_item(item))
-		print(" {:<30}{:>10}{:>10}{:>10}{:^15}".format(inp.name,inp.n_electrons,inp.charge,inp.mult,inp.c_m_validate_txt))
-	print("---------------------------------------------------------------------------\n")
 	try: import raapbs; raapbs.option()
 	except: return
