@@ -92,7 +92,7 @@ class CreateInputs:
 	def save_gjf(self,parameters,index):
 		heavy_e, gjf_overwrite, folder_op = [preferences.heavy_atom,preferences.gjf_overwrite,preferences.folder_op]
 		if not folder_op: self.weeded_list = sel_files(self.weeded_list)
-		if self.weeded_list == False: return
+		if not self.weeded_list: return
 		for i in self.weeded_list:
 			if os.path.isfile(os.path.join(cf,(i.replace(".xyz",preferences.gauss_ext)))) and not gjf_overwrite:
 				print(i.replace(".xyz",preferences.gauss_ext) + " already exist on current directory!")
@@ -197,7 +197,7 @@ def validate_input(weeded_list):
 	for item in weeded_list:
 		if preferences.comp_software == "orca":	comp_input = InpFile(read_item(item))
 		else: comp_input = GjfFile(read_item(item))
-		a = (comp_input.name, comp_input.n_electrons, comp_input.charge, comp_input.multiplicity, comp_input.c_m_validate_txt())
+		a = (comp_input.name, comp_input.n_electrons, comp_input.charge, comp_input.multiplicity, comp_input.c_m_validate_txt)
 		print(" {:<30}{:>10}{:>10}{:>10}{:^15}".format(*a))
 		if preferences.comp_software == "gaussian":
 			split_list = [i for i in comp_input.list[1:comp_input.title_idx()] if not i.lower().startswith("%chk")]

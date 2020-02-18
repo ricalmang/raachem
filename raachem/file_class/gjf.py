@@ -26,6 +26,19 @@ class GjfFile:
 	@property
 	def elements(self):
 		return list(dict.fromkeys(self.all_elements))
+	@property
+	def c_m_validate(self):
+		return not self.n_electrons()%2 == self.multiplicity%2
+	@property
+	def c_m_validate_txt(self):
+		return "Yes" if self.c_m_validate else "--NO!--"
+	@property
+	def n_proc(self):
+		for line in self.list:
+			line = line.lower().replace(" ","")
+			if "%nprocshared=" in line:	return int(line.replace("%nprocshared=",""))
+			elif "%nproc=" in line:	return int(line.replace("%nproc=",""))
+		return None
 
 	def route_idx(self):
 		for idx,line in enumerate(self.list):
@@ -60,10 +73,6 @@ class GjfFile:
 		return [line[1:] for line in self.cord_block()]
 
 
-	def c_m_validate(self):
-		return not self.n_electrons()%2 == self.multiplicity()%2
-	def c_m_validate_txt(self):
-		return "Yes" if self.c_m_validate() else "--NO!--"
 	def gen_basis(self):
 		return any(i in self.route_text().lower() for i in ["/gen", "gen ","genecp"])
 	def declared_basis_lines(self):
@@ -78,8 +87,8 @@ class GjfFile:
 		if not self.gen_basis(): return []
 		#errors
 		zero_last = any(self.list[i].split()[-1] == "0" for i in self.declared_basis_lines())
-		miss_basis = [a for a in self.elements() if a not in self.declared_basis()]
-		surpl_basis = [a for a in self.declared_basis() if a not in self.elements()]
+		miss_basis = [a for a in self.elements if a not in self.declared_basis()]
+		surpl_basis = [a for a in self.declared_basis() if a not in self.elements]
 		rep_basis = list(dict.fromkeys([a for a in self.declared_basis() if self.declared_basis().count(a) > 1]))
 		#statements
 		errors = []
@@ -108,8 +117,8 @@ class GjfFile:
 		if not self.gen_ecp(): return []
 		#errors
 		zero_last = any(self.list[i].split()[-1] == "0" for i in self.declared_ecp_lines())
-		miss_ecp = [a for a in self.elements() if a not in self.declared_ecp() and elements.index(a) > heavy_e]
-		surpl_ecp = [a for a in self.declared_ecp() if a not in self.elements()]
+		miss_ecp = [a for a in self.elements if a not in self.declared_ecp() and elements.index(a) > heavy_e]
+		surpl_ecp = [a for a in self.declared_ecp() if a not in self.elements]
 		rep_ecp = list(dict.fromkeys([a for a in self.declared_ecp() if self.declared_ecp().count(a) > 1]))
 		#statements
 		errors = []
@@ -118,12 +127,7 @@ class GjfFile:
 		if surpl_ecp:errors.append("Surplous ecp for: {} ?".format(" ".join(surpl_ecp)))
 		if rep_ecp:errors.append("Repeated ecp for: {} ?".format(" ".join(rep_ecp)))
 		return errors
-	def n_proc(self):
-		for line in self.list:
-			line = line.lower().replace(" ","")
-			if "%nprocshared=" in line:	return int(line.replace("%nprocshared=",""))
-			elif "%nproc=" in line:	return int(line.replace("%nproc=",""))
-		return None
+
 	def mem(self):
 		for line in self.list:
 			line = line.lower().replace(" ","")

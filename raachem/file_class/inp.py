@@ -25,9 +25,6 @@ class InpFile:
 		self.unique_atoms = list(dict.fromkeys(self.atoms)) if self.cord_ls else None
 		self.n_atoms = len(self.atoms) if self.cord_ls else None
 		self.block_keys = self._block_keys()
-		self.n_proc = self._n_proc()
-		self.c_m_validate = self.n_electrons % 2 == self.multiplicity % 2  # True if valid, otherwise False
-		self.c_m_validate_txt = "Yes" if self.c_m_validate else "--NO!--"
 		self.return_print = "\n".join(self.list[1:])
 	@property
 	def name(self):
@@ -48,6 +45,28 @@ class InpFile:
 	@property
 	def elements(self):
 		return list(dict.fromkeys(self.all_elements))
+	@property
+	def c_m_validate(self):
+		return not self.n_electrons()%2 == self.multiplicity%2
+	@property
+	def c_m_validate_txt(self):
+		return "Yes" if self.c_m_validate else "--NO!--"
+	@property
+	def n_proc(self):
+		n_proc = None
+		for a in self.keys.split():
+			if not a.lower().startswith("pal"):continue
+			if all(b.isdigit() for b in a.lower()[3:]): n_proc = a.lower()[3:]
+		while True:
+			if "pal" not in self.block_keys: break
+			if "nprocs" not in self.block_keys["pal"]: break
+			print("WARNING: Proccessor count seems to have been provided twice: {}".format(self.name))
+			if self.block_keys["pal"].index("nprocs") + 1  == len(self.block_keys["pal"]): break
+			value = self.block_keys[self.block_keys["pal"].index("nprocs") + 1]
+			if all(a.isdigit() for a in value): n_proc = value
+			break
+		return n_proc
+
 
 
 
@@ -69,20 +88,7 @@ class InpFile:
 			print("Did you properly provide charge and multiplicity data?")
 			print("Line {}:\n'{}'".format(self.start_xyz+1,self.list[self.start_xyz]))
 		return [charge,mult]
-	def _n_proc(self):
-		n_proc = None
-		for a in self.keys.split():
-			if not a.lower().startswith("pal"):continue
-			if all(b.isdigit() for b in a.lower()[3:]): n_proc = a.lower()[3:]
-		while True:
-			if "pal" not in self.block_keys: break
-			if "nprocs" not in self.block_keys["pal"]: break
-			print("WARNING: Proccessor count seems to have been provided twice: {}".format(self.name))
-			if self.block_keys["pal"].index("nprocs") + 1  == len(self.block_keys["pal"]): break
-			value = self.block_keys[self.block_keys["pal"].index("nprocs") + 1]
-			if all(a.isdigit() for a in value): n_proc = value
-			break
-		return n_proc
+
 	def _block_keys(self,possible_blocks=possible_blocks):
 		d = {}
 		for a in self.perc_ls:
