@@ -44,6 +44,7 @@ def rel_scf(list=False):
 	for i in file_weeder([".log"]):
 		log = LogFile(read_item(i))
 		energies.append([log.name(), log.scf_done()[-1][1], log.normal_termin()])
+	if len(energies) == 0: print("No .log files in current folder"); return
 	energies = [[i[0], float(i[1]), i[2]] for i in energies]
 	energies.sort(key=lambda x: x[1])
 	min_e = energies[0][1]

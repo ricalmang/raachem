@@ -69,9 +69,6 @@ class InpFile:
 	def cord_block(self):
 		return [*self.list_l[self.c_m_idx()+1:self.end_cord_idx()]]
 	@functools.lru_cache(maxsize=1)
-	def xyz_obj(self):
-		return XyzFile([self.name,self.n_atoms," ",*self.cord_block()])
-	@functools.lru_cache(maxsize=1)
 	def route_text(self):
 		return " ".join([self.list[a].replace("!", "", 1) for a in self.keys_ls])
 	@functools.lru_cache(maxsize=1)
@@ -123,7 +120,8 @@ class InpFile:
 		for idx,line in enumerate(self.list[start:]):
 			if "end" in line.lower().split(): return idx + start
 		return None
-
+	def xyz_obj(self):
+		return XyzFile([self.name(),self.n_atoms()," ",*[" ".join(a) for a in self.cord_block()]])
 
 
 

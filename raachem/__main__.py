@@ -9,7 +9,7 @@ sys.excepthook = show_exception_and_exit
 from raachem.file_creator.e_analysis import e_analysis, rel_scf, csv_e_analysis, deduplicate
 from raachem.file_creator.input import CreateInputs, xyz_insert, validate_input
 from raachem.file_creator.svg import vector_graph
-from raachem.file_creator.xyz import gjf_to_xyz, log_to_xyz, log_to_xyz_scan, log_freq_xyz, superimpose_alg, geodes_int
+from raachem.file_creator.xyz import input_to_xyz, log_to_xyz, log_to_xyz_scan, log_freq_xyz, superimpose_alg, geodes_int
 from raachem.file_creator.deploy_scripts import deploy
 from raachem.util.gen_purp import file_weeder, mv_up_folder, preferences
 try:import raapbs; pbs = True
@@ -81,7 +81,7 @@ def user_interface_2():#MORE OPTIONS
 		print("5 - Superimpose two xyz files")
 		print("6 - Generate solvated .xyz's")
 		print(" ")
-		print(" ")
+		print("8 - Create .xyz files from .inp files")
 		print(" ")
 		option=input()
 		if   option == '0': user_interface_1()
@@ -92,7 +92,7 @@ def user_interface_2():#MORE OPTIONS
 		elif option == "5":	superimpose_alg()
 		elif option == "6": geodes_int()
 		elif option == "7":	pass
-		elif option == "8": pass
+		elif option == "8": input_to_xyz()
 		elif option == "9":	pass
 		else: print("Invalid input. Could not process request!")
 		user_interface_2()
@@ -117,7 +117,7 @@ def user_interface_2():#MORE OPTIONS
 		elif option == "5":	superimpose_alg()
 		elif option == "6": geodes_int()
 		elif option == "7":	deduplicate()
-		elif option == "8": gjf_to_xyz(file_weeder([preferences.gauss_ext]))
+		elif option == "8": input_to_xyz()
 		elif option == "9":	csv_e_analysis()
 		else: print("Invalid input. Could not process request!")
 		user_interface_2()

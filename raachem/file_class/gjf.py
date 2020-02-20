@@ -57,9 +57,7 @@ class GjfFile:
 			if line[0] in elements:	cordinates.append(line)
 			else: cordinates.append([elements[int(line[0])],*line[0:]])
 		return cordinates
-	@functools.lru_cache(maxsize=1)
-	def xyz_obj(self):
-		return XyzFile([self.name,self.n_atoms," ",*self.cord_block()])
+
 	@functools.lru_cache(maxsize=1)
 	def route_text(self):
 		return " ".join(self.list[self.route_idx():self.title_idx()])
@@ -163,3 +161,5 @@ class GjfFile:
 		for line in xyz_obj.form_cord_block(): new.append(line)
 		for line in self.list[self.end_cord_idx()-1:]: new.append(line)
 		return GjfFile(new)
+	def xyz_obj(self):
+		return XyzFile([self.name(),self.n_atoms()," ",*[" ".join(a) for a in self.cord_block()]])

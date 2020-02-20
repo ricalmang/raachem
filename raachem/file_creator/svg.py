@@ -17,6 +17,8 @@ class SvgGen:
 		self.graphs = []
 		self.conectors = []
 		self.complete_init()
+		assert len(self.graphs) != 0, "Could not obtain energies from file!"
+		if len(self.graphs) == 1 and len(self.graphs[0][-1]) == 1: self.spam_worthy = False
 		self.set_height()
 		self.graph_frame()
 		self.graph_grid()
@@ -79,8 +81,10 @@ class SvgGen:
 	def n_col(self):
 		return max(i[0] for i in self.all_e())
 	def min_g(self):
+		if len(self.graphs) == 1 and len(self.graphs[0][-1]) == 1: return min(i[2] for i in self.all_e() if len(i) == 4) - 10
 		return min(i[2] for i in self.all_e() if len(i) == 4)
 	def max_g(self):
+		if len(self.graphs) == 1 and len(self.graphs[0][-1]) == 1: return max(i[2] for i in self.all_e() if len(i) == 4) + 10
 		return max(i[2] for i in self.all_e() if len(i) == 4)
 	def range_dg(self):
 		return self.max_g() - self.min_g()
@@ -213,5 +217,7 @@ def vector_graph():
 		text = read_item(None, "Which txt item contains the names and energies?", [".txt"])
 		if text: break
 		else: return
-	SvgGen(text).save_svg()
-
+	try:
+		SvgGen(text).save_svg()
+	except AssertionError:
+		return

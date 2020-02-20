@@ -1,11 +1,21 @@
 import os, random, math
-from raachem.util.gen_purp import read_item, file_weeder, cf
+from raachem.util.gen_purp import read_item, file_weeder, cf, preferences
 from raachem.file_class.log import LogFile
 from raachem.file_class.xyz import XyzFile
+from raachem.file_class.inp import InpFile
+from raachem.file_class.gjf import GjfFile
 
-def gjf_to_xyz(weeded_list):
+
+def input_to_xyz():
+	extension = preferences.gauss_ext if preferences.comp_software == "gaussian" else ".inp"
+	weeded_list = file_weeder([extension])
 	for i in weeded_list:
-		XyzFile(read_item(i)).save_file()
+		if preferences.comp_software == "orca":
+			xyz = InpFile(read_item(i)).xyz_obj()
+			xyz.save_file()
+		elif preferences.comp_software == "gaussian":
+			xyz = GjfFile(read_item(i)).xyz_obj()
+			xyz.save_file()
 def log_to_xyz(weeded_list,geom="Last"):
 	if geom == "Last":
 		for i in weeded_list:
