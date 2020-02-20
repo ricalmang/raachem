@@ -31,4 +31,20 @@ python3 -m raachem
 python -m raachem
 ```
 Done! The script operates on files in the current working directory!
-
+# Uninstalling
+Run one of the following commands as apropriated:
+```bash
+py -m pip uninstall raachem
+```
+```bash
+python3 -m pip uninstall raachem
+```
+```bash
+pip3 uninstall raachem
+```
+```bash
+python -m pip uninstall raachem
+```
+```bash
+pip uninstall raachem
+```
