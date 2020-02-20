@@ -26,7 +26,7 @@ def e_analysis(weeded_list):
 			print(" {:<4}{:<20}{:>25}".format(idx + 1, entry[0], round(entry[1], 2)))
 		while True:
 			option = input()
-			if option in [range(len(rel_e)+1)]: option = int(option); break
+			if option in [str(a) for a in range(len(rel_e)+1)]: option = int(option); break
 			else: print("Could notunderstand request")
 		if option == 0: print("Leaving analysis\n")
 		else:

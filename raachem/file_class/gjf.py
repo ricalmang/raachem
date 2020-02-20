@@ -34,13 +34,13 @@ class GjfFile:
 		return [line[0] for line in self.cord_block()]
 	@functools.lru_cache(maxsize=1)
 	def elements(self):
-		return list(dict.fromkeys(self.all_elements))
+		return list(dict.fromkeys(self.all_elements()))
 	@functools.lru_cache(maxsize=1)
 	def c_m_validate(self):
 		return not self.n_electrons()%2 == self.multiplicity()%2
 	@functools.lru_cache(maxsize=1)
 	def c_m_validate_txt(self):
-		return "Yes" if self.c_m_validate else "--NO!--"
+		return "Yes" if self.c_m_validate() else "--NO!--"
 	@functools.lru_cache(maxsize=1)
 	def n_proc(self):
 		for line in self.list:

@@ -43,13 +43,13 @@ class InpFile:
 		return [a[0] for a in self.list_l[self.c_m_idx()+1:self.end_cord_idx()]] if self.cord_ls else None
 	@functools.lru_cache(maxsize=1)
 	def elements(self):
-		return list(dict.fromkeys(self.all_elements))
+		return list(dict.fromkeys(self.all_elements()))
 	@functools.lru_cache(maxsize=1)
 	def c_m_validate(self):
 		return not self.n_electrons()%2 == self.multiplicity()%2
 	@functools.lru_cache(maxsize=1)
 	def c_m_validate_txt(self):
-		return "Yes" if self.c_m_validate else "--NO!--"
+		return "Yes" if self.c_m_validate() else "--NO!--"
 	@functools.lru_cache(maxsize=1)
 	def n_proc(self):
 		n_proc = None
