@@ -1,4 +1,4 @@
-#Description
+# Description
 Helpfull script for doing computational chemistry
 # Installing
 Manually delete the old "raachem" if you had it (pre installer versions).
