@@ -1,3 +1,5 @@
+#Description
+Helpfull script for doing computational chemistry
 # Installing
 Manually delete the old "raachem" if you had it (pre installer versions).
 "cd" to the directory that contains the 'setup.py' file

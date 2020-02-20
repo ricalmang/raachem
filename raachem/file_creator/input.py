@@ -66,13 +66,13 @@ class CreateInputs:
 		lookup_str = "=====WILL BE GEOMETRY BLOCK====="
 		for idx, line in enumerate(parameters[1:]):
 			if line.strip() == lookup_str and self.template_ext == ".GAUSSIAN": self.save_gjf(parameters[1:], idx); return
-			if line.strip() == lookup_str and self.template_ext == ".ORCA": pass; return
+			if line.strip() == lookup_str and self.template_ext == ".ORCA": self.save_inp(parameters[1:], idx); return
 		print("The following line is required on the {} file:".format(self.template_ext))
 		print(lookup_str)
 		return
 	def save_inp(self,parameters,index):
 		if not preferences.folder_op: self.weeded_list = sel_files(self.weeded_list)
-		if self.weeded_list == False: return
+		if not self.weeded_list: return
 		for i in self.weeded_list:
 			if os.path.isfile(os.path.join(cf, (i.replace(".xyz", ".inp")))):
 				print(i.replace(".xyz",".inp") + " already exist on current directory!")
@@ -85,7 +85,7 @@ class CreateInputs:
 				inp_out.append(line + "\n")
 			for line in parameters[index + 1:]:
 				inp_out.append(line + "\n")
-			with open(os.path.join(cf, (i.replace(".xyz",".inp"))), "w") as file:
+			with open(os.path.join(cf, (i.replace(".xyz",".inp"))), "w",newline="\n") as file:
 				for line in inp_out: file.write(line)
 			print(i.replace(".xyz", ".inp"), " created!")
 		return
@@ -197,7 +197,7 @@ def validate_input(weeded_list):
 	for item in weeded_list:
 		if preferences.comp_software == "orca":	comp_input = InpFile(read_item(item))
 		else: comp_input = GjfFile(read_item(item))
-		a = (comp_input.name, comp_input.n_electrons, comp_input.charge, comp_input.multiplicity, comp_input.c_m_validate_txt)
+		a = (comp_input.name(), comp_input.n_electrons(), comp_input.charge(), comp_input.multiplicity(), comp_input.c_m_validate_txt())
 		print(" {:<30}{:>10}{:>10}{:>10}{:^15}".format(*a))
 		if preferences.comp_software == "gaussian":
 			split_list = [i for i in comp_input.list[1:comp_input.title_idx()] if not i.lower().startswith("%chk")]
@@ -211,12 +211,12 @@ def validate_input(weeded_list):
 					p_matches.sort(key=lambda x: x[2])
 					typo_error.append([p_matches[0][0],p_matches[0][1]])
 			novel_keys.append([i for i in no_match if i not in [a[0] for a in typo_error]])
-			if any([comp_input.basis_errors(),typo_error,comp_input.ecp_errors(preferences.heavy_atom),len(comp_input.name.split()) != 1]):
+			if any([comp_input.basis_errors(),typo_error,comp_input.ecp_errors(preferences.heavy_atom),len(comp_input.name().split()) != 1]):
 				print("{:>7}+----------------------------ALERT---------------------------+".format(" "))
 				for error in comp_input.basis_errors(): print("{:>8}{:>60}".format("|",error+" |"))
 				for error in comp_input.ecp_errors(preferences.heavy_atom): print("{:>8}{:>60}".format("|",error+" |"))
 				for i in typo_error: print("{:>8}{:>60}".format("|", "Is '{}' a typo of '{}'?".format(i[0],i[1]) + " |"))
-				if len(comp_input.name.split()) != 1: print("{:>8}{:>60}".format("|", "Filename must not contain spaces!" + " |"))
+				if len(comp_input.name().split()) != 1: print("{:>8}{:>60}".format("|", "Filename must not contain spaces!" + " |"))
 				print("{:>7}+-----------------------------------------------------------+".format(" "))
 	print("---------------------------------------------------------------------------\n")
 	novel_keys = list(dict.fromkeys([a for b in novel_keys for a in b]))
