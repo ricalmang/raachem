@@ -1,0 +1,19 @@
+%nprocshared=8
+%mem=15gb
+#T m06l/Gen Opt=(loose,modredundant)  SCRF=(solvent=methanol,SMD)
+
+Title
+
+1 1
+H                0.000000            0.000000            0.000000
+F                0.000000            0.000000            1.000000
+
+B 1 2 S 1 -0.075
+
+H F 0
+6-31G(d,p)
+****
+
+
+
+
