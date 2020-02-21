@@ -55,14 +55,14 @@ class InpFile:
 		n_proc = None
 		for a in self.route_text().split():
 			if not a.lower().startswith("pal"):continue
-			if all(b.isdigit() for b in a.lower()[3:]): n_proc = a.lower()[3:]
+			if all(b.isdigit() for b in a.lower()[3:]): n_proc = int(a.lower()[3:])
 		while True:
 			if "pal" not in self.block_keys(): break
 			if "nprocs" not in self.block_keys()["pal"]: break
 			print("WARNING: Proccessor count seems to have been provided twice: {}".format(self.name))
 			if self.block_keys()["pal"].index("nprocs") + 1  == len(self.block_keys()["pal"]): break
 			value = self.block_keys()[self.block_keys()["pal"].index("nprocs") + 1]
-			if all(a.isdigit() for a in value): n_proc = value
+			if all(a.isdigit() for a in value): n_proc = int(value)
 			break
 		return n_proc
 	@functools.lru_cache(maxsize=1)
