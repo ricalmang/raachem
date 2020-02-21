@@ -1,7 +1,7 @@
 # Description
 Helpfull scripts for doing computational chemistry
 
-# Latest updates:
+# Latest updates
 Support for orca input file creation\
 Customizable use of .com or .gjf extensions\
 Bug fixes and other customizations

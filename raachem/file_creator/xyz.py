@@ -117,7 +117,7 @@ def superimpose_alg():
 		for file in file_weeder(["xyz"]):
 			if not file == xyz_1.name():
 				xyz_2 = XyzFile(read_item(file))
-				xyz_3 = xyz_2.superimpose(xyz_1, xyz_2, num_atoms, True)
+				xyz_3 = xyz_2.superimpose(xyz_1, num_atoms, True)
 				xyz_3.save_file(os.path.join(cf, "rotated"))
 		xyz_1.std_cord(num_atoms).save_file(os.path.join(cf, "rotated"))
 	elif mode == "2":

@@ -6,6 +6,7 @@ from raachem.util.gen_purp import is_str_float
 class XyzFile:
 	def __init__(self,file_content):
 		self.list = file_content
+
 		if len(self.list) < 2: raise Exception(".xyz Object is empty?")
 		elif not (str(self.list[1]).strip().isdigit() and len(str(self.list[1]).split()) == 1):
 			print("{} is not a proper .xyz file\nAttempting to read it anyway!".format(self.list[0]))
@@ -26,6 +27,7 @@ class XyzFile:
 			try_xyz.insert(1," ")
 			try_xyz.insert(0,self.list[0])
 			self.list = try_xyz
+		self.list_l = [str(a).split() for a in self.list]
 	def __add__(self,other):
 		assert type(self) == type(other), "Operation '+' allowed only for two XYZ objects"
 		new = [os.path.splitext(self.name())[0]+"_"+other.name(), str(self.n_atoms()+other.n_atoms()),
@@ -63,10 +65,9 @@ class XyzFile:
 	@functools.lru_cache(maxsize=1)
 	def cord_block(self):
 		cordinates = []
-		for idx,line in enumerate(self.list):
+		for idx,line in enumerate(self.list_l):
 			if idx <= 2: continue
 			if idx >= self.n_atoms() + 3: continue
-			line = line.split()
 			if line[0] in elements:	cordinates.append(line)
 			else: cordinates.append([elements[int(line[0])],*line[0:]])
 		return cordinates
