@@ -181,7 +181,6 @@ class XyzFile:
 			return XyzFile([self.name(),self.n_atoms(),self.title(),*cord_block])
 		elif ret == "max_d":
 			return False
-
 	def std_cord(self, n_atoms=0):
 		pure_cord = self.cord_strip() if n_atoms == 0 else self.cord_strip()[0:n_atoms]
 		xyz_avg = [[float(n) for n in i] for i in pure_cord]
@@ -190,6 +189,10 @@ class XyzFile:
 		xyz_avg = [[str(n) for n in a] for a in xyz_avg]
 		xyz_avg = [" ".join([b,*a]) for b,a in zip(self.all_elements(),xyz_avg)]
 		xyz_mat = [self.name(), self.n_atoms(), " ", *xyz_avg]
+		return XyzFile(xyz_mat)
+	def enantiomer(self):
+		xyz = [" ".join([*a[0:-1],str(-float(a[-1]))]) for a in self.cord_block()]
+		xyz_mat = [os.path.splitext(self.name())[0]+"_ent.xyz", self.n_atoms(), " ", *xyz]
 		return XyzFile(xyz_mat)
 	def connectivity(self):
 		atoms = self.all_elements()

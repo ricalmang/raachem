@@ -9,7 +9,7 @@ sys.excepthook = show_exception_and_exit
 from raachem.file_creator.e_analysis import e_analysis, rel_scf, csv_e_analysis, deduplicate
 from raachem.file_creator.input import CreateInputs, xyz_insert, validate_input
 from raachem.file_creator.svg import vector_graph
-from raachem.file_creator.xyz import input_to_xyz, log_to_xyz, log_to_xyz_scan, log_freq_xyz, superimpose_alg, geodes_int
+from raachem.file_creator.xyz import input_to_xyz, log_to_xyz, log_to_xyz_scan, log_freq_xyz, superimpose_alg, geodes_int, xyz_ent
 from raachem.file_creator.deploy_scripts import deploy
 from raachem.util.gen_purp import file_weeder, mv_up_folder, preferences
 try:import raapbs; pbs = True
@@ -75,7 +75,7 @@ def user_interface_2():#MORE OPTIONS
 		print("Chose an option:")
 		print("0 - Go back to previous menu")
 		print("1 - Create E_profile.svg")
-		print(" ")
+		print("2 - Create enantiomer of xyz files")
 		print("3 - Move Files up a folder")
 		print(" ")
 		print("5 - Superimpose two xyz files")
@@ -86,7 +86,7 @@ def user_interface_2():#MORE OPTIONS
 		option=input()
 		if   option == '0': user_interface_1()
 		elif option == '1': vector_graph()
-		elif option == "2":	pass
+		elif option == "2":	xyz_ent()
 		elif option == "3":	mv_up_folder()
 		elif option == "4":	pass
 		elif option == "5":	superimpose_alg()
@@ -100,7 +100,7 @@ def user_interface_2():#MORE OPTIONS
 		print("Chose an option:")
 		print("0 - Go back to previous menu")
 		print("1 - Create E_profile.svg")
-		print("2 - SCF energy analysis for optimizations")
+		print("2 - Create enantiomer of xyz files")
 		print("3 - Move Files up a folder")
 		print("4 - Split frequency in two directions and create corresponding .xyzs")
 		print("5 - Superimpose two xyz files")
@@ -111,7 +111,7 @@ def user_interface_2():#MORE OPTIONS
 		option=input()
 		if   option == '0': user_interface_1()
 		elif option == '1': vector_graph()
-		elif option == "2":	rel_scf()
+		elif option == "2":	xyz_ent()
 		elif option == "3":	mv_up_folder()
 		elif option == "4":	log_freq_xyz(file_weeder([".log"]))
 		elif option == "5":	superimpose_alg()

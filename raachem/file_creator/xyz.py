@@ -6,6 +6,12 @@ from raachem.file_class.inp import InpFile
 from raachem.file_class.gjf import GjfFile
 
 
+def xyz_ent():
+	weeded_list = file_weeder([".xyz"])
+	for i in weeded_list:
+		xyz = XyzFile(read_item(i)).enantiomer()
+		xyz.save_file()
+
 def input_to_xyz():
 	extension = preferences.gauss_ext if preferences.comp_software == "gaussian" else ".inp"
 	weeded_list = file_weeder([extension])
