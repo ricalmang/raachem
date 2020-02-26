@@ -6,7 +6,7 @@ def show_exception_and_exit(exc_type, exc_value, tb):
 	sys.exit(-1)
 sys.excepthook = show_exception_and_exit
 ############################RAACHEM IMPORTS###############################
-from raachem.file_creator.e_analysis import e_analysis, rel_scf, csv_e_analysis, deduplicate
+from raachem.file_creator.e_analysis import e_analysis, csv_e_analysis, deduplicate
 from raachem.file_creator.input import CreateInputs, xyz_insert, validate_input
 from raachem.file_creator.svg import vector_graph
 from raachem.file_creator.xyz import input_to_xyz, log_to_xyz, log_to_xyz_scan, log_freq_xyz, superimpose_alg, geodes_int, xyz_ent
