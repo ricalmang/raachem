@@ -14,7 +14,7 @@ setuptools.setup(
     url="https://github.com/ricalmang/raachem",
 	install_requires = ["numpy"],
     packages=setuptools.find_packages(),
-	package_data = {"":["*.GAUSSIAN"]},
+	package_data = {"":["*.GAUSSIAN","*.ORCA"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

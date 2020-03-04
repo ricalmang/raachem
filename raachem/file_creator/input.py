@@ -54,7 +54,7 @@ class CreateInputs:
 			else:
 				print("No builtins")
 	def try_again(self):
-		print("A PARAMETERS {} file was added to the current folder!".format(self.template_ext))
+		print("A PARAMETERS{} file was added to the current folder!".format(self.template_ext))
 		print("You can edit it now")
 		print("0 - To cancel")
 		print("1 - File is ready!")
