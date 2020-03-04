@@ -56,14 +56,16 @@ class InpFile:
 		for a in self.route_text().split():
 			if not a.lower().startswith("pal"):continue
 			if all(b.isdigit() for b in a.lower()[3:]): n_proc = int(a.lower()[3:])
+		if n_proc == 1: print("ALERT: For single core jobs the number of parallel processors 'PAL' should be omited!")
 		while True:
 			if "pal" not in self.block_keys(): break
 			if "nprocs" not in self.block_keys()["pal"]: break
 			print("WARNING: Proccessor count seems to have been provided twice: {}".format(self.name))
 			if self.block_keys()["pal"].index("nprocs") + 1  == len(self.block_keys()["pal"]): break
 			value = self.block_keys()[self.block_keys()["pal"].index("nprocs") + 1]
-			if all(a.isdigit() for a in value): n_proc = int(value)
+			if value.isdigit(): n_proc = int(value)
 			break
+		if n_proc is None: n_proc = 1
 		return n_proc
 	@functools.lru_cache(maxsize=1)
 	def cord_block(self):
