@@ -94,7 +94,7 @@ class GjfFile:
 	@functools.lru_cache(maxsize=1)
 	def declared_basis(self):
 		e_w_b = [self.list[i].split()[:-1] for i in self.declared_basis_lines()]
-		return [j for i in e_w_b for j in i]
+		return [j.capitalize() for i in e_w_b for j in i]
 	@functools.lru_cache(maxsize=1)
 	def basis_errors(self):
 		if not self.gen_basis(): return []
@@ -123,12 +123,12 @@ class GjfFile:
 			if idx < start_idx: continue
 			if len(line.split()) <= 1: continue
 			if line.split()[-1] != "0": continue
-			if all(True if a in elements else False for a in line.split()[:-1]): line_idx.append(idx)
+			if all(True if a.capitalize() in elements else False for a in line.split()[:-1]): line_idx.append(idx)
 		return line_idx
 	@functools.lru_cache(maxsize=1)
 	def declared_ecp(self):
 		ecps = [self.list[i].split()[:-1] for i in self.declared_ecp_lines()]
-		return [j for i in ecps for j in i]
+		return [j.capitalize() for i in ecps for j in i]
 	@functools.lru_cache(maxsize=1)
 	def ecp_errors(self,heavy_e = 36):
 		if not self.gen_ecp(): return []

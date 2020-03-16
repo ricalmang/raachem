@@ -13,6 +13,15 @@ class LogFile:
 		if len(self.list[0]) == 0:raise Exception(".log Object has no name")
 		else: return self.list[0]
 	@functools.lru_cache(maxsize=1)
+	def charge_mult(self):
+		pattern = ("Charge", "=","value", "Multiplicity","=", "value")
+		nums = (0,1,3,4)
+		for i,a in enumerate(self.list):
+			if i > 150: print("CM not found\nIt will be assumed to be 0 1");return ["0", "1"]
+			elif len(a.split()) != 6: continue
+			elif not all([b == c for d,(b,c) in enumerate(zip(a.split(),pattern)) if d in nums]): continue
+			else: return a.split()[2::3]
+	@functools.lru_cache(maxsize=1)
 	def start_xyz_idxs(self):
 		indexes = [i+5 for i,l in enumerate(self.s_list) if len(l) == 2 and "orientation:" == l[-1]]
 		if len(indexes) == 0: raise Exception("No cartesian coordinates found for {}!".format(self.name()))

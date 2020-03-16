@@ -194,13 +194,43 @@ class XyzFile:
 		xyz = [" ".join([*a[0:-1],str(-float(a[-1]))]) for a in self.cord_block()]
 		xyz_mat = [os.path.splitext(self.name())[0]+"_ent.xyz", self.n_atoms(), " ", *xyz]
 		return XyzFile(xyz_mat)
+	@functools.lru_cache(maxsize=1)
 	def connectivity(self):
 		atoms = self.all_elements()
 		rad = [dict(element_radii)[a]*0.01 for a in atoms]
 		xyz = [[float(b) for b in a] for a in self.cord_strip()]
 		def dist(a, b): return sum((d - c) ** 2 for c, d in zip(a, b)) ** (0.5)
-		con = [[i for i,b in enumerate(xyz) if 0.8*dist(a,b)<(rad[y]+rad[i]) and i!=y] for y,a in enumerate(xyz)]
-		return [[i,x,l] for i,(x,l) in enumerate(zip(atoms,con))]
+		con = [[i for i,b in enumerate(xyz) if dist(a,b)<1.2*(rad[y]+rad[i]) and i!=y] for y,a in enumerate(xyz)]
+		return [a for a in zip(atoms,con)]
+
+	#TODO
+	@functools.lru_cache(maxsize=1)
+	def angles(self):
+		aa = self.cord_strip()
+		a = [[[i,aa[i]],[[n,aa[n]] for n in a[1]]] for i,a in enumerate(self.connectivity()) if len(a[1]) > 1]
+		for n in a:
+			b_a = np.array([float(i) for i in n[0][-1]])
+			#print(n[0][-1])
+			for n1 in n[1]:
+				a_a = np.array([float(i) for i in n1[1]])
+				#print(n1[1])
+				for n2 in n[1]:
+					if n2 == n1: continue
+					#print(n2[1])
+					c_a = np.array([float(i) for i in n2[1]])
+					ba = a_a - b_a
+					bc = c_a - b_a
+					cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+					angle = np.arccos(cosine_angle)
+					print("n1\n",n1)
+					print("n\n",n)
+					print("n2\n",n2)
+					print(self.elements()[n1[0][0]],self.elements()[n[0][0]],self.elements()[n2[0][0]], np.degrees(angle))
+
+
+
+
+
 	def alkene(self):
 		con = self.connectivity()
 		csp2 = [a for a in con if all([a[1]=="C",len(a[2])==3])]

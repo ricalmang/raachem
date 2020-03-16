@@ -2,6 +2,7 @@ import os, math, shutil, re
 from difflib import SequenceMatcher
 from raachem.file_class.xyz import XyzFile
 from raachem.file_class.gjf import GjfFile
+from raachem.file_class.log import LogFile
 from raachem.file_class.inp import InpFile
 from raachem.util.constants import element_radii, keywords,cf, elements
 from raachem.util.gen_purp import file_weeder, read_item, preferences, sel_files
@@ -89,19 +90,38 @@ class CreateInputs:
 				for line in inp_out: file.write(line)
 			print(i.replace(".xyz", ".inp"), " created!")
 		return
-	def save_gjf(self,parameters,index):
+	def save_gjf(self,parameters,index,p_files_dir=p_files_dir):
 		heavy_e, gjf_overwrite, folder_op = [preferences.heavy_atom,preferences.gjf_overwrite,preferences.folder_op]
 		if not folder_op: self.weeded_list = sel_files(self.weeded_list)
-		if not self.weeded_list: return
+		use_logs = False
+		if not self.weeded_list:
+			option = input("Do you wish to use .log files instead?(y/n)?")
+			if option.lower() == "y": use_logs = True; self.weeded_list = file_weeder([".log"])
+			else: return
+			if not self.weeded_list: print("No logs found!"); return
+		if any([b in [a for a in parameters] for b in ["INSERT_GBS_BASIS","INSERT_GBS_ECP"]]):
+			gbs_files = file_weeder([".gbs"],cf=p_files_dir)
+			print("Chosse one basis/ecp set\n0 - Cancel")
+			for i, file in enumerate(gbs_files): print("{} - {}".format(i+1, file))
+			while True:
+				option = input()
+				if option in [str(a) for a in range(len(gbs_files)+1)]: break
+				print("Invalid option")
+			if option == "0": return
+			with open(os.path.join(p_files_dir,gbs_files[int(option)-1])) as file:
+				gbs_file = file.read().splitlines()
+			basis, ecps = self.read_gbs(gbs_file)
 		for i in self.weeded_list:
-			if os.path.isfile(os.path.join(cf,(i.replace(".xyz",preferences.gauss_ext)))) and not gjf_overwrite:
-				print(i.replace(".xyz",preferences.gauss_ext) + " already exist on current directory!")
+			original_ext = ".log" if use_logs else ".xyz"
+			if os.path.isfile(os.path.join(cf,(i.replace(original_ext,preferences.gauss_ext)))) and not gjf_overwrite:
+				print(i.replace(original_ext,preferences.gauss_ext) + " already exist on current directory!")
 				continue
-			xyz = XyzFile(read_item(i))
+			xyz = LogFile(read_item(i)).last_xyz_obj() if use_logs else XyzFile(read_item(i))
 			gjf_out=[]
 			rm_lines = []
-			for line in parameters[0:index]:
-				gjf_out.append(line.replace("FILENAME",i.replace(".xyz",""))+"\n")
+			for idx_a,line in enumerate(parameters[0:index]):
+				if use_logs and idx_a+1 == len(parameters[0:index]): line = " ".join(LogFile(read_item(i)).charge_mult())
+				gjf_out.append(line.replace("FILENAME",i.replace(original_ext,""))+"\n")
 			for line in xyz.form_cord_block():
 				gjf_out.append(line+"\n")
 			for line in parameters[index+1:]:
@@ -138,6 +158,7 @@ class CreateInputs:
 						elif all([line.split()[0] == "B", line.split()[3] == "S",line.split()[-1] == "DIST"]):
 							gjf_out.append(line.replace("DIST",str(1+int(ideal_dist/0.075))+" 0.075\n"))
 							continue
+				# BASIS like: "LIGHT_ELEMENT_BASIS 0" or "HEAVY_ELEMENT_BASIS 0" and ECP like "HEAVY_ELEMENT_ECP 0"
 				elif len(line.split()) == 2:
 					if any(True for a in ["/gen","gen ","genecp"] if a in " ".join(parameters[0:index-3]).lower()):
 						if line.split() == ["LIGHT_ELEMENT_BASIS","0"]:
@@ -161,13 +182,52 @@ class CreateInputs:
 									gjf_out[idx_a] = pattern.sub("",a)
 								rm_lines.append(len(gjf_out))
 								rm_lines.append(len(gjf_out)+1)
-				gjf_out.append(line.replace("FILENAME",i.replace(".xyz",""))+"\n")
+				# BASIS like: "INSERT_GBS_BASIS"
+				elif "INSERT_GBS_BASIS" in line:
+					for element in sorted(xyz.elements(),key=lambda x: elements.index(x)):
+						for line_a in basis[element]:
+							gjf_out.append(line_a+"\n")
+					continue
+				# ECP like: "INSERT_GBS_ECP"
+				elif "INSERT_GBS_ECP" in line:
+					if "pseudo=read" in " ".join(parameters[0:index - 3]).lower().replace(" ", ""):
+						need_ecp = [a for a in xyz.elements() if elements.index(a) > preferences.heavy_atom]
+						for element in sorted(need_ecp,key=lambda x: elements.index(x)):
+							for line_a in ecps[element]:
+								gjf_out.append(line_a+"\n")
+						if not need_ecp:
+							pattern = re.compile(r'pseudo.{0,3}=.{0,3}read', re.IGNORECASE)
+							eval_lines = gjf_out[0:index - 3]
+							for idx_a, a in enumerate(eval_lines):
+								gjf_out[idx_a] = pattern.sub("", a)
+						continue
+				gjf_out.append(line.replace("FILENAME",i.replace(original_ext,""))+"\n")
 			gjf_out.append("\n")
-			with open(os.path.join(cf,(i.replace(".xyz",preferences.gauss_ext))),"w") as gjf_file:
+			with open(os.path.join(cf,(i.replace(original_ext,preferences.gauss_ext))),"w") as gjf_file:
 				for line in [i for idx,i in enumerate(gjf_out) if idx not in rm_lines]: gjf_file.write(line)
-			print(i.replace(".xyz",preferences.gauss_ext)," created!")
+			print(i.replace(original_ext,preferences.gauss_ext)," created!")
 		return
-
+	def read_gbs(self,gbs_file):
+		gbs = [a for a in gbs_file if not a.startswith("!")]
+		gbs_starts = []
+		for i,a in enumerate(gbs):
+			if len(a.split()) != 2: continue
+			if not a.split()[0].capitalize() in elements: continue
+			if a.split()[1] != "0":continue
+			else: gbs_starts.append(i)
+		gbs_basis_ends = [i+1 for i,a in enumerate(gbs) if a.startswith("****")]
+		basis_dict = {gbs[a].split()[0].capitalize():gbs[a:b] for a,b in zip(gbs_starts,gbs_basis_ends) if a < b}
+		ecp_starts = [a for a in gbs_starts if a > max(gbs_basis_ends)]
+		ecp_ends = []
+		for start in ecp_starts:
+			for i,line in enumerate(gbs[start:]):
+				if i < 1:continue
+				elif len(line.split()) == 0: ecp_ends.append(i+start); break
+				elif i + 1 == len(gbs[start:]):  ecp_ends.append(i+start); break
+				elif len(line.split()) != 2: continue
+				elif line.split()[0].capitalize() in elements and line.split()[1] == "0": ecp_ends.append(i+start); break
+		ecp_dict = {gbs[a].split()[0].capitalize():gbs[a:b] for a,b in zip(ecp_starts,ecp_ends) if a < b}
+		return basis_dict,ecp_dict
 def xyz_insert(weeded_list):
 	"""Inserts geometries into both orca and gaussian input files"""
 	extension = ".inp" if preferences.comp_software == "orca" else preferences.gauss_ext

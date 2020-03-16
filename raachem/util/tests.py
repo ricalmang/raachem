@@ -4,6 +4,8 @@ import os
 test_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),"testes")
 inp = InpFile(read_item(file_name="teste.001.inp", promp = False, cf=test_dir))
 gjf = GjfFile(read_item(file_name="teste.001.gjf", promp = False, cf=test_dir))
+log = LogFile(read_item(file_name="TS1_ent.log", promp = False, cf=test_dir))
+assert log.charge_mult() == ["1","1"]
 assert isinstance(inp, InpFile)
 assert isinstance(gjf, GjfFile)
 a = None
@@ -37,3 +39,6 @@ for obj in [inp,gjf]:
 	assert wal(type(obj.list_l[0])) is list, print(a)
 assert wal(type(gjf.title_idx())) is int, print(a)
 
+#xyz = XyzFile(read_item(file_name="teste_01.xyz", promp = False, cf=test_dir))
+#print(xyz.connectivity())
+#xyz.angles()
