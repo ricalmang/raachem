@@ -152,6 +152,18 @@ class LogFile:
 		path_b = [a for a in points if a[0] == "2"]
 		return [a[3] for a in [*path_a,*path_b]]
 	@functools.lru_cache(maxsize=1)
+	def opt(self):
+		points = []
+		for i,a in enumerate(self.s_list):
+			if len(a) != 9: continue
+			if any(c != a[b] for c,b in zip(["Step","number","out","of","a","maximum","of"],[0,1,3,4,5,6,7])): continue
+			if any(not a[b].isnumeric() for b in [2,8]): continue
+			else: points.append(i)
+		scf = [max(self.scf_done(),key=lambda x: x[0] if x[0] < a else 0)[1] for a in points]
+		a_idx = [max(self.start_xyz_idxs(),key=lambda x: x if x < a else 0) for a in points]
+		b_idx = [max(self.end_xyz_idxs(),key=lambda x: x if x < a else 0) for a in points]
+		return [self.any_xyz_obj(a,b,title=c) for a,b,c in zip(a_idx,b_idx,scf)]
+	@functools.lru_cache(maxsize=1)
 	def scan_geoms(self):
 		geoms = []
 		for idx,line in enumerate(self.s_list):

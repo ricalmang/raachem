@@ -1,6 +1,3 @@
-import os
-cf=os.getcwd()
-
 # Data from: Pyykko, P. and Atsumi, M., Chem. Eur. J. 2009, 15, 186.
 element_radii=[
     ["None",None],['H', 32],['He', 46],[ 'Li', 133],[ 'Be', 102],[ 'B', 85],[ 'C', 75],

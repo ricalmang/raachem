@@ -1,7 +1,6 @@
 import os, shutil, time
-cf=os.getcwd()
 
-def read_item(file_name=None, promp=False, extension=None, cf=cf):
+def read_item(file_name=None, promp=False, extension=None, cf=os.getcwd()):
 	"""Reads an .xyz, .gjf, .com or .log item and returns a list of its contents ready for class instantiation"""
 	if promp != False:
 		if extension is None: extension = [".xyz"]
@@ -15,7 +14,7 @@ def read_item(file_name=None, promp=False, extension=None, cf=cf):
 	with open(os.path.join(cf,file_name),"r") as in_file: in_content = in_file.read().splitlines()
 	in_content.insert(0,file_name)
 	return in_content
-def file_weeder(ext_to_weed,cf=cf, promp=True):
+def file_weeder(ext_to_weed,cf=os.getcwd(), promp=True):
 	"""Looks up files with the extensions provided in current directory"""
 	fulllist=os.listdir(cf)
 	weeded_list=[]
@@ -47,7 +46,7 @@ def mv_up_folder():
 		if extension == "return": return
 		if extension != None: break
 		print("Invalid Option")
-	folders = [x[0] for x in os.walk(cf)]
+	folders = [x[0] for x in os.walk(os.getcwd())]
 	for folder in folders[1:]:
 		for file in file_weeder(extension, folder, promp=False):
 			if os.path.isfile(os.path.join(folders[0], file)):

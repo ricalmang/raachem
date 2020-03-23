@@ -1,5 +1,5 @@
 import os, random, math
-from raachem.util.gen_purp import read_item, file_weeder, cf, preferences
+from raachem.util.gen_purp import read_item, file_weeder, preferences
 from raachem.file_class.log import LogFile
 from raachem.file_class.xyz import XyzFile
 from raachem.file_class.inp import InpFile
@@ -40,20 +40,21 @@ def log_to_xyz_scan(weeded_list):
 	else:
 		for item in [int(i)-1 for i in option]:
 			log = LogFile(read_item(weeded_list[item]))
-			if log.calc_type().lower() == "red": xyzs = log.scan_geoms()
-			elif log.calc_type().lower() == "irc": xyzs = log.irc()
-			else: print("The file is neither a scan or irc log file"); continue
+			if log.calc_type().lower() == "red": xyzs = log.scan_geoms(); ext_name = "_scan_traject.xyz"
+			elif log.calc_type().lower() == "irc": xyzs = log.irc(); ext_name = "_irc_traject.xyz"
+			elif log.calc_type().lower() in ["opt","ts"]: xyzs = log.opt(); ext_name = "_opt_traject.xyz"
+			else: print("The file is not a scan, opt or irc log file"); continue
 			if len(xyzs) < 2: print("The file contains less than 2 steps"); return
 			max_e = max(float(i.title()) for i in xyzs)
 			min_e = min(float(i.title()) for i in xyzs)
-			collumn=[0,"percentage","kcal"]
+			c=[0,"percentage","kcal"]
 			print("{:5}{:^90}{:>8}".format("Entry"," >---> Relative Energy >---> "," kcal"))
 			for entry in [float(i.title()) for i in xyzs]:
-				collumn[0]=collumn[0]+1
-				collumn[1]= "|"*int(90*((float(entry)-min_e)/(max_e-min_e)))
-				collumn[2]= (float(entry)-min_e)*627.5
-				print("{:<5}{:<90}  {:>6.2f}".format(collumn[0],collumn[1],collumn[2]))
-			file_name = weeded_list[item].replace(".log","_scan_traject.xyz")
+				c[0]=c[0]+1
+				c[1]= "|"*int(90*((float(entry)-min_e)/(max_e-min_e)))
+				c[2]= (float(entry)-min_e)*627.5
+				print("{:<5}{:<90}".format(c[0],c[1]),"{:>6.5f}".format(c[2]) if ext_name == "_opt_traject.xyz" else "{:>6.2f}".format(c[2]))
+			file_name = weeded_list[item].replace(".log",ext_name)
 			with open(file_name,mode="w",newline="\n") as file: file.write("\n".join([a for i in xyzs for a in i.return_print()]))
 
 def log_freq_xyz(weeded_list):
@@ -103,11 +104,11 @@ def superimpose_alg():
 	if mode == "0":
 		return
 	elif mode == "1":
-		if os.path.exists(os.path.join(cf, "rotated")):
+		if os.path.exists(os.path.join(os.getcwd(), "rotated")):
 			print("Rotated directory already exists in current directory!")
 			print("Please remove it and try again.")
 			return
-		os.mkdir(os.path.join(cf, "rotated"))
+		os.mkdir(os.path.join(os.getcwd(), "rotated"))
 
 		xyz_1 = read_item(None, "Which item do you wish to compare to?", [".xyz"])
 		if xyz_1: xyz_1 = XyzFile(xyz_1)
@@ -124,8 +125,8 @@ def superimpose_alg():
 			if not file == xyz_1.name():
 				xyz_2 = XyzFile(read_item(file))
 				xyz_3 = xyz_2.superimpose(xyz_1, num_atoms, True)
-				xyz_3.save_file(os.path.join(cf, "rotated"))
-		xyz_1.std_cord(num_atoms).save_file(os.path.join(cf, "rotated"))
+				xyz_3.save_file(os.path.join(os.getcwd(), "rotated"))
+		xyz_1.std_cord(num_atoms).save_file(os.path.join(os.getcwd(), "rotated"))
 	elif mode == "2":
 		xyz_1 = read_item(None, "Which item do you wish to compare to?", [".xyz"])
 		if xyz_1: xyz_1 = XyzFile(xyz_1)
@@ -172,11 +173,11 @@ def geodes_int():
 				for line in cord:
 					trajectory_mult.append(str(line) + "\n")
 		# save suporposed trajectory
-		file_path = os.path.join(cf, "superposed.xyz")
+		file_path = os.path.join(os.getcwd(), "superposed.xyz")
 		with open(file_path, "w") as file:
 			for geom in trajectory_mult:
 				file.write(str(geom))
-		file_path = os.path.join(cf, "trajectory.xyz")
+		file_path = os.path.join(os.getcwd(), "trajectory.xyz")
 		# save parwise trajectory
 		with open(file_path, "w") as file:
 			for xyz in trajectory:

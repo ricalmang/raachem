@@ -1,5 +1,4 @@
 import os, math
-from raachem.util.constants import cf
 from raachem.util.gen_purp import read_item, is_str_float
 
 class SvgGen:
@@ -207,7 +206,7 @@ class SvgGen:
 				print("Cannot conect items on same column")
 	
 	def save_svg(self):
-		with open(os.path.join(cf, "E_profile.svg"), "w") as out_file:
+		with open(os.path.join(os.getcwd(), "E_profile.svg"), "w") as out_file:
 			for line in self.svg_code: out_file.write(line + "\n")
 			out_file.write('</svg>')
 		print("Take a look at file E_profile.svg!")

@@ -1,6 +1,5 @@
 import os, shutil
 from raachem.file_class.log import LogFile
-from raachem.util.constants import cf
 from raachem.util.gen_purp import file_weeder, read_item, preferences
 
 
@@ -36,7 +35,7 @@ def e_analysis(weeded_list):
 				out.append("{:<26}{:>26}{:>10}{:>10}".format(*a))
 			out.append("\n")
 	with open(file_name,mode="w",newline="\n") as file: file.write("\n".join(out))
-	print("\nDone! \nPlease lookup:\n\n" + os.path.join(cf, file_name), "\n")
+	print("\nDone! \nPlease lookup:\n\n" + os.path.join(os.getcwd(), file_name), "\n")
 
 
 def rel_scf(list=False):
@@ -59,10 +58,10 @@ def csv_e_analysis():
 			elif file.endswith(".log"): logs.append(os.path.join(folder, file))
 		return logs
 	csv_list = []
-	files = evaluate_list(cf)
+	files = evaluate_list(os.getcwd())
 	last = len(files)
 	for i,a in enumerate(files):
-		log = LogFile(read_item(os.path.relpath(a, cf)))
+		log = LogFile(read_item(os.path.relpath(a, os.getcwd())))
 		# line = ["Termination","Free energy","Enthalphy","last_SCF","negativeFreq","TYP","File","Folder"]
 		line = ["Yes" if log.normal_termin() else "No",
 				str(log.first_thermal()[7]) if log.frequencies() else "No data",
@@ -75,7 +74,7 @@ def csv_e_analysis():
 		csv_list.append(line)
 		if i+1 < last: print("\rEvaluating... {}/{}".format(i+1,last),end="")
 		else: print("\rEvaluation done ({}/{}), saving svg file...".format(i+1,last))
-	if not csv_list: return print("No .log files in {} directory".format(cf))
+	if not csv_list: return print("No .log files in {} directory".format(os.getcwd()))
 	csv_list.sort(key=lambda x: x[0], reverse=True)
 	csv_code = ["Free energy, +A, +B, +C, +D, -E, -F, Complex, Rel_E,-Freq ," +
 				"TYP , Filename , INP , LOG , FOLD , Folder name, Done?, last_SCF, Hentalphy"]
@@ -89,13 +88,13 @@ def csv_e_analysis():
 			'=HYPERLINK("{}";"Link")'.format(line[6]).replace(".log", preferences.gauss_ext) if os.path.isfile(line[6].replace(".log", preferences.gauss_ext)) else "-",
 			'=HYPERLINK("{}";"Link")'.format(line[6]),
 			'=HYPERLINK("{}";"Link")'.format(line[7]),
-			os.path.relpath(line[7], cf),
+			os.path.relpath(line[7], os.getcwd()),
 			line[0],
 			line[3],
 			line[2]]
 		csv_code.append(",".join(row))
 	with open("linked_analysis.csv", mode="w",newline="\n") as file: file.write("\n".join(csv_code))
-	print("Done, please lookup:\n{}".format(os.path.join(cf, "linked_analysis.csv")))
+	print("Done, please lookup:\n{}".format(os.path.join(os.getcwd(), "linked_analysis.csv")))
 
 def deduplicate():
 	print("Analyzing energies...")
@@ -117,14 +116,14 @@ def deduplicate():
 					black_list.append(obj[3].name())
 			if duplicates: folder_mov.append([file[3].name(),duplicates])
 	for folder in folder_mov:
-		subfolder = os.path.join(cf,"duplicates_of_{}".format(folder[0].replace(".log","")))
+		subfolder = os.path.join(os.getcwd(),"duplicates_of_{}".format(folder[0].replace(".log","")))
 		try: os.mkdir(subfolder)
 		except FileExistsError:	pass
 		print("Moving duplicates of {} to the following directory:\n{}".format(folder[0], subfolder))
 		for file in folder[1]:
 			for alt_file in file_weeder([file.replace(".log",".")]):
 				try:
-					shutil.move(os.path.join(cf,alt_file),os.path.join(subfolder,alt_file))
+					shutil.move(os.path.join(os.getcwd(),alt_file),os.path.join(subfolder,alt_file))
 					print("Moved: {}".format(alt_file))
 				except PermissionError:
 					print("Error while moving log files:")

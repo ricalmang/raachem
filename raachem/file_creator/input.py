@@ -4,15 +4,17 @@ from raachem.file_class.xyz import XyzFile
 from raachem.file_class.gjf import GjfFile
 from raachem.file_class.log import LogFile
 from raachem.file_class.inp import InpFile
-from raachem.util.constants import element_radii, keywords,cf, elements
+from raachem.util.constants import element_radii, keywords, elements
 from raachem.util.gen_purp import file_weeder, read_item, preferences, sel_files
 
 class CreateInputs:
 	p_files_dir = os.path.join(os.path.dirname(__file__), "par_templates")
-	def __init__(self):
+	def __init__(self,use_logs=False):
+		self.use_logs = use_logs
+		self.original_ext = ".log" if use_logs else ".xyz"
 		self.template_ext = ".GAUSSIAN" if preferences.comp_software == "gaussian" else ".ORCA"
 		self.extension = preferences.gauss_ext if preferences.comp_software == "gaussian" else ".inp"
-		self.weeded_list = file_weeder(["xyz"])
+		self.weeded_list = file_weeder([self.original_ext])
 		self.submit_parameters()
 	def submit_parameters(self,p_files_dir=p_files_dir):
 		p_files = file_weeder([self.template_ext], cf=p_files_dir)
@@ -50,7 +52,7 @@ class CreateInputs:
 				while option_2 == True: option_2 = {str(idx): i for idx, i in enumerate(p_files)}.get(input(), True)
 				if option_2 == None: return
 				else:
-					shutil.copy(os.path.join(p_files_dir, option_2), os.path.join(cf, "PARAMETERS{}".format(self.template_ext)))
+					shutil.copy(os.path.join(p_files_dir, option_2), os.path.join(os.getcwd(), "PARAMETERS{}".format(self.template_ext)))
 					self.try_again()
 			else:
 				print("No builtins")
@@ -75,30 +77,28 @@ class CreateInputs:
 		if not preferences.folder_op: self.weeded_list = sel_files(self.weeded_list)
 		if not self.weeded_list: return
 		for i in self.weeded_list:
-			if os.path.isfile(os.path.join(cf, (i.replace(".xyz", ".inp")))):
-				print(i.replace(".xyz",".inp") + " already exist on current directory!")
+			if os.path.isfile(os.path.join(os.getcwd(), (i.replace(self.original_ext, ".inp")))):
+				print(i.replace(self.original_ext,".inp") + " already exist on current directory!")
 				continue
-			xyz = XyzFile(read_item(i))
+			xyz = LogFile(read_item(i)).last_xyz_obj() if self.use_logs else XyzFile(read_item(i))
 			inp_out = []
-			for line in parameters[0:index]:
-				inp_out.append(line.replace("FILENAME", i.replace(".xyz", "")) + "\n")
+			for idx_a, line in enumerate(parameters[0:index]):
+				if self.use_logs and idx_a + 1 == len(parameters[0:index]):
+					line = "* " + " ".join(LogFile(read_item(i)).charge_mult())
+				inp_out.append(line.replace("FILENAME", i.replace(self.original_ext, "")) + "\n")
 			for line in xyz.form_cord_block():
 				inp_out.append(line + "\n")
 			for line in parameters[index + 1:]:
 				inp_out.append(line + "\n")
-			with open(os.path.join(cf, (i.replace(".xyz",".inp"))), "w",newline="\n") as file:
+			with open(os.path.join(os.getcwd(), (i.replace(self.original_ext,".inp"))), "w",newline="\n") as file:
 				for line in inp_out: file.write(line)
-			print(i.replace(".xyz", ".inp"), " created!")
+			print(i.replace(self.original_ext, ".inp"), " created!")
 		return
 	def save_gjf(self,parameters,index,p_files_dir=p_files_dir):
 		heavy_e, gjf_overwrite, folder_op = [preferences.heavy_atom,preferences.gjf_overwrite,preferences.folder_op]
+		ecps, basis = None, None
 		if not folder_op: self.weeded_list = sel_files(self.weeded_list)
-		use_logs = False
-		if not self.weeded_list:
-			option = input("Do you wish to use .log files instead?(y/n)?")
-			if option.lower() == "y": use_logs = True; self.weeded_list = file_weeder([".log"])
-			else: return
-			if not self.weeded_list: print("No logs found!"); return
+		if not self.weeded_list: return
 		if any([b in [a for a in parameters] for b in ["INSERT_GBS_BASIS","INSERT_GBS_ECP"]]):
 			gbs_files = file_weeder([".gbs"],cf=p_files_dir)
 			print("Chosse one basis/ecp set\n0 - Cancel")
@@ -111,17 +111,17 @@ class CreateInputs:
 			with open(os.path.join(p_files_dir,gbs_files[int(option)-1])) as file:
 				gbs_file = file.read().splitlines()
 			basis, ecps = self.read_gbs(gbs_file)
+			assert type(basis) == dict, "Basis was not read"
+			assert type(ecps) == dict, "Ecps were not read"
 		for i in self.weeded_list:
-			original_ext = ".log" if use_logs else ".xyz"
-			if os.path.isfile(os.path.join(cf,(i.replace(original_ext,preferences.gauss_ext)))) and not gjf_overwrite:
-				print(i.replace(original_ext,preferences.gauss_ext) + " already exist on current directory!")
+			gjf_out, rm_lines, = [], []
+			if os.path.isfile(os.path.join(os.getcwd(),(i.replace(self.original_ext,preferences.gauss_ext)))) and not gjf_overwrite:
+				print(i.replace(self.original_ext,preferences.gauss_ext) + " already exist on current directory!")
 				continue
-			xyz = LogFile(read_item(i)).last_xyz_obj() if use_logs else XyzFile(read_item(i))
-			gjf_out=[]
-			rm_lines = []
+			xyz = LogFile(read_item(i)).last_xyz_obj() if self.use_logs else XyzFile(read_item(i))
 			for idx_a,line in enumerate(parameters[0:index]):
-				if use_logs and idx_a+1 == len(parameters[0:index]): line = " ".join(LogFile(read_item(i)).charge_mult())
-				gjf_out.append(line.replace("FILENAME",i.replace(original_ext,""))+"\n")
+				if self.use_logs and idx_a+1 == len(parameters[0:index]): line = " ".join(LogFile(read_item(i)).charge_mult())
+				gjf_out.append(line.replace("FILENAME",i.replace(self.original_ext,""))+"\n")
 			for line in xyz.form_cord_block():
 				gjf_out.append(line+"\n")
 			for line in parameters[index+1:]:
@@ -201,13 +201,14 @@ class CreateInputs:
 							for idx_a, a in enumerate(eval_lines):
 								gjf_out[idx_a] = pattern.sub("", a)
 						continue
-				gjf_out.append(line.replace("FILENAME",i.replace(original_ext,""))+"\n")
+				gjf_out.append(line.replace("FILENAME",i.replace(self.original_ext,""))+"\n")
 			gjf_out.append("\n")
-			with open(os.path.join(cf,(i.replace(original_ext,preferences.gauss_ext))),"w") as gjf_file:
+			with open(os.path.join(os.getcwd(),(i.replace(self.original_ext,preferences.gauss_ext))),"w") as gjf_file:
 				for line in [i for idx,i in enumerate(gjf_out) if idx not in rm_lines]: gjf_file.write(line)
-			print(i.replace(original_ext,preferences.gauss_ext)," created!")
+			print(i.replace(self.original_ext,preferences.gauss_ext)," created!")
 		return
-	def read_gbs(self,gbs_file):
+	@staticmethod
+	def read_gbs(gbs_file):
 		gbs = [a for a in gbs_file if not a.startswith("!")]
 		gbs_starts = []
 		for i,a in enumerate(gbs):
@@ -231,7 +232,7 @@ class CreateInputs:
 def xyz_insert(weeded_list):
 	"""Inserts geometries into both orca and gaussian input files"""
 	extension = ".inp" if preferences.comp_software == "orca" else preferences.gauss_ext
-	sub_folder = os.path.join(cf,"inserted_input_files")
+	sub_folder = os.path.join(os.getcwd(),"inserted_input_files")
 	if os.path.exists(sub_folder):
 		print("'inserted_input_files' directory already exists in current directory!")
 		print("Please remove it and try again!")
@@ -285,4 +286,4 @@ def validate_input(weeded_list):
 		print(novel_keys)
 		print("---------------------------------------------------------------------------\n")
 	try: import raapbs; raapbs.option()
-	except: return
+	except ImportError: pass

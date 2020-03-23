@@ -1,6 +1,6 @@
 import os, math, functools
 import numpy as np
-from raachem.util.constants import cf, elements, element_radii
+from raachem.util.constants import elements, element_radii
 from raachem.util.gen_purp import is_str_float
 
 class XyzFile:
@@ -95,8 +95,8 @@ class XyzFile:
 		print("\n".join([l for l in self.return_print()]))
 		print("========END========")
 	def save_file(self,directory=None):
-		if directory == None:
-			file_path = os.path.splitext(os.path.join(cf,self.name().replace(" ","")))[0]+".xyz"
+		if directory is None:
+			file_path = os.path.splitext(os.path.join(os.getcwd(),self.name().replace(" ","")))[0]+".xyz"
 		else:
 			file_path = os.path.splitext(os.path.join(directory,self.name().replace(" ","")))[0]+".xyz"
 		if os.path.exists(file_path):
@@ -127,8 +127,8 @@ class XyzFile:
 		xyz_mat = [self.name(), self.n_atoms()," ",*[" ".join(a) for a in rotated]]
 		return XyzFile(xyz_mat)
 	def superimpose(self, other, num_atoms=0, print_step=False, ret = "geom",conv=12):
-		"takes xyz object and returns xyz object rotated by angle over axis"
-		"""Returns either the max_distance 'max_d' or final geometry 'geom' after rotations and superpositions"""
+		"""Takes xyz object and returns xyz object rotated by angle over axis.
+		Returns either the max_distance 'max_d' or final geometry 'geom' after rotations and superpositions"""
 		def rotate(xyz,angle,axis):
 			if axis == "x":
 				m_mat = [[1., 0., 0.], [0., math.cos(angle), -math.sin(angle)], [0., math.sin(angle), math.cos(angle)]]
@@ -226,10 +226,6 @@ class XyzFile:
 					print("n\n",n)
 					print("n2\n",n2)
 					print(self.elements()[n1[0][0]],self.elements()[n[0][0]],self.elements()[n2[0][0]], np.degrees(angle))
-
-
-
-
 
 	def alkene(self):
 		con = self.connectivity()
