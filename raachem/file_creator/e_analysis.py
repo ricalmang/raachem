@@ -61,19 +61,21 @@ def csv_e_analysis():
 	files = evaluate_list(os.getcwd())
 	last = len(files)
 	for i,a in enumerate(files):
-		log = LogFile(read_item(os.path.relpath(a, os.getcwd())))
-		# line = ["Termination","Free energy","Enthalphy","last_SCF","negativeFreq","TYP","File","Folder"]
-		line = ["Yes" if log.normal_termin() else "No",
-				str(log.first_thermal()[7]) if log.frequencies() else "No data",
-				str(log.first_thermal()[6]) if log.frequencies() else "No data",
-				str(log.scf_done()[-1][-1]) if log.normal_termin() else "No data",
-				str(len([a for a in log.frequencies() if float(a) < 0])) if log.frequencies() else "No data",
-				log.calc_type(),
-				a,
-				os.path.dirname(a)]
-		csv_list.append(line)
-		if i+1 < last: print("\rEvaluating... {}/{}".format(i+1,last),end="")
-		else: print("\rEvaluation done ({}/{}), saving svg file...".format(i+1,last))
+		try:
+			log = LogFile(read_item(os.path.relpath(a, os.getcwd())))
+			# line = ["Termination","Free energy","Enthalphy","last_SCF","negativeFreq","TYP","File","Folder"]
+			line = ["Yes" if log.normal_termin() else "No",
+					str(log.first_thermal()[7]) if log.frequencies() else "No data",
+					str(log.first_thermal()[6]) if log.frequencies() else "No data",
+					str(log.scf_done()[-1][-1]) if log.normal_termin() else "No data",
+					str(len([a for a in log.frequencies() if float(a) < 0])) if log.frequencies() else "No data",
+					log.calc_type(),
+					a,
+					os.path.dirname(a)]
+			csv_list.append(line)
+			if i+1 < last: print("\rEvaluating... {}/{}".format(i+1,last),end="")
+			else: print("\rEvaluation done ({}/{}), saving svg file...".format(i+1,last))
+		except Exception as e: print("\nError on file:\n{}\n".format(a));print(e,"\n")
 	if not csv_list: return print("No .log files in {} directory".format(os.getcwd()))
 	csv_list.sort(key=lambda x: x[0], reverse=True)
 	csv_code = ["Free energy, +A, +B, +C, +D, -E, -F, Complex, Rel_E,-Freq ," +

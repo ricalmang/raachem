@@ -35,7 +35,8 @@ def log_to_xyz_scan(weeded_list):
 		print("{:<5}{:<40}".format(idx+1,file))
 	while True:
 		option=input().split()
-		if all(True if a in [str(b) for b in range(len(weeded_list)+1)] else False for a in option): break
+		if all(True if a in [str(b) for b in range(len(weeded_list)+1)] else False for a in option):
+			if option: break
 	if "0" in option: print("No files will be analyzed!");return
 	else:
 		for item in [int(i)-1 for i in option]:

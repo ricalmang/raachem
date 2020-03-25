@@ -24,12 +24,18 @@ class UserInterface:
 		except ImportError:
 			self.pbs = False
 	def describe(self):
+		"""Call help for all functions"""
 		for a in dir(self):
 			if a.startswith("func"):
 				help("raachem.util.interface.UserInterface.{}".format(a))
 	def render(self,menu=None):
+		"""Render menu"""
 		if menu is None: menu = self.menu_a
 		while True:
+			if preferences.comp_software == "gaussian":
+				print("Choose an option:")
+			else:
+				print("Choose an option (option* = functions for gaussian software files):")
 			for i,a in enumerate(menu):	a(mode="print",idx=i)
 			while True:
 				option = input()
@@ -45,26 +51,20 @@ class UserInterface:
 	def func_01(mode="print",idx=None):
 		"""Create .xyz files from log files"""
 		if preferences.comp_software == "orca":
-			if mode == "print":	print(" ")
-			elif mode == "run":	pass
+			if mode == "print":	print("{} - Create .xyz files from .log files*".format(idx))
+			elif mode == "run":	log_to_xyz(file_weeder([".log"]))
 		elif preferences.comp_software == "gaussian":
-			if mode == "print":
-				print("{} - Create .xyz files from .log files".format(idx))
-			elif mode == "run":
-				log_to_xyz(file_weeder([".log"]))
+			if mode == "print":	print("{} - Create .xyz files from .log files".format(idx))
+			elif mode == "run":	log_to_xyz(file_weeder([".log"]))
 	@staticmethod
 	def func_02(mode="print",idx=None):
 		"""Create input files from .xyz files"""
 		if preferences.comp_software == "orca":
-			if mode == "print":
-				print("{} - Create .inp files from .xyz files".format(idx))
-			elif mode == "run":
-				CreateInputs()
+			if mode == "print":	print("{} - Create .inp files from .xyz files".format(idx))
+			elif mode == "run":	CreateInputs()
 		elif preferences.comp_software == "gaussian":
-			if mode == "print":
-				print("{} - Create {} files from .xyz files".format(idx,preferences.gauss_ext))
-			elif mode == "run":
-				CreateInputs()
+			if mode == "print":	print("{} - Create {} files from .xyz files".format(idx,preferences.gauss_ext))
+			elif mode == "run":	CreateInputs()
 	def func_03(self,mode="print",idx=None):
 		"""Validade inputs and possibly create pbs files"""
 		if preferences.comp_software == "orca":
@@ -83,54 +83,41 @@ class UserInterface:
 	def func_04(mode="print",idx=None):
 		"""Analyze scan, opt and irc files"""
 		if preferences.comp_software == "orca":
-			if mode == "print":	print(" ")
-			elif mode == "run":	pass
+			if mode == "print":	print("{} - IRC, OPT or SCAN analysis*".format(idx))
+			elif mode == "run":	log_to_xyz_scan(file_weeder([".log"]))
 		elif preferences.comp_software == "gaussian":
-			if mode == "print":
-				print("{} - IRC, OPT or SCAN analysis".format(idx))
-			elif mode == "run":
-				log_to_xyz_scan(file_weeder([".log"]))
+			if mode == "print": print("{} - IRC, OPT or SCAN analysis".format(idx))
+			elif mode == "run":	log_to_xyz_scan(file_weeder([".log"]))
 	@staticmethod
 	def func_05(mode="print",idx=None):
 		"""Insert xyz geometries into input"""
 		if preferences.comp_software == "orca":
-			if mode == "print":
-				print("{} - Insert .xyz geometries into the corresponding .inp files".format(idx))
-			elif mode == "run":
-				xyz_insert(file_weeder([".xyz"]))
+			if mode == "print":	print("{} - Insert .xyz geometries into the corresponding .inp files".format(idx))
+			elif mode == "run":	xyz_insert(file_weeder([".xyz"]))
 		elif preferences.comp_software == "gaussian":
-			if mode == "print":
-				print("{} - Insert .xyz geometries into the corresponding {} files".format(idx,preferences.gauss_ext))
-			elif mode == "run":
-				xyz_insert(file_weeder([".xyz"]))
+			if mode == "print":	print("{} - Insert .xyz geometries into the corresponding {} files".format(idx,preferences.gauss_ext))
+			elif mode == "run":	xyz_insert(file_weeder([".xyz"]))
 	@staticmethod
 	def func_06(mode="print",idx=None):
 		"""Analyze relative free energies"""
 		if preferences.comp_software == "orca":
-			if mode == "print":	print(" ")
-			elif mode == "run": pass
+			if mode == "print":	print("{} - Extract free energies from .log files*".format(idx))
+			elif mode == "run": e_analysis(file_weeder([".log"]))
 		elif preferences.comp_software == "gaussian":
-			if mode == "print":
-				print("{} - Extract free energies from .log files".format(idx))
-			elif mode == "run":
-				e_analysis(file_weeder([".log"]))
+			if mode == "print":	print("{} - Extract free energies from .log files".format(idx))
+			elif mode == "run": e_analysis(file_weeder([".log"]))
 	@staticmethod
 	def func_07(mode="print",idx=None):
 		"""Create inputs from .log files"""
 		if preferences.comp_software == "orca":
-			if mode == "print":
-				print("{} - Create .inp files from .log files".format(idx))
-			elif mode == "run":
-				CreateInputs(use_logs=True)
+			if mode == "print":	print("{} - Create .inp files from .log files".format(idx))
+			elif mode == "run":	CreateInputs(use_logs=True)
 		elif preferences.comp_software == "gaussian":
-			if mode == "print":
-				print("{} - Create {} files from .log files".format(idx,preferences.gauss_ext))
-			elif mode == "run":
-				CreateInputs(use_logs=True)
+			if mode == "print":	print("{} - Create {} files from .log files".format(idx,preferences.gauss_ext))
+			elif mode == "run":	CreateInputs(use_logs=True)
 	def func_08(self,mode="print",idx=None):
-		"""Analyze optimizations"""
+		"""Placeholder"""
 		_ , _ , _ = self, mode, idx
-		pass
 	def func_09(self,mode="print",idx=None):
 		"""More options"""
 		if mode == "print":	print("{} - More options".format(idx))
@@ -156,10 +143,12 @@ class UserInterface:
 		elif mode == "run":	mv_up_folder()
 	@staticmethod
 	def func_14(mode="print",idx=None):
-		"""Create inputs from .log files"""
+		"""Create to xyzs from a given vibration"""
 		if preferences.comp_software == "orca":
-			if mode == "print":	print("")
-			elif mode == "run": pass
+			if mode == "print":
+				print("{} - Split frequency in two directions and create corresponding .xyzs*".format(idx))
+			elif mode == "run":
+				log_freq_xyz(file_weeder([".log"]))
 		elif preferences.comp_software == "gaussian":
 			if mode == "print":
 				print("{} - Split frequency in two directions and create corresponding .xyzs".format(idx))
@@ -167,7 +156,7 @@ class UserInterface:
 				log_freq_xyz(file_weeder([".log"]))
 	@staticmethod
 	def func_15(mode="print",idx=None):
-		"""Move files up a folder"""
+		"""Superimpose xyz structures"""
 		if mode == "print":	print("{} - Superimpose two xyz files".format(idx))
 		elif mode == "run":	superimpose_alg()
 	@staticmethod
@@ -179,8 +168,10 @@ class UserInterface:
 	def func_17(mode="print",idx=None):
 		"""Deduplicate .log files"""
 		if preferences.comp_software == "orca":
-			if mode == "print":	print("")
-			elif mode == "run": pass
+			if mode == "print":
+				print("{} - Deduplicate .log files*".format(idx))
+			elif mode == "run":
+				deduplicate()
 		elif preferences.comp_software == "gaussian":
 			if mode == "print":
 				print("{} - Deduplicate .log files".format(idx))
@@ -203,8 +194,10 @@ class UserInterface:
 	def func_19(mode="print",idx=None):
 		"""Analyze log files in current and sub directories"""
 		if preferences.comp_software == "orca":
-			if mode == "print":	print("")
-			elif mode == "run": pass
+			if mode == "print":
+				print("{} - Analyze log files in current and sub directories*".format(idx))
+			elif mode == "run":
+				csv_e_analysis()
 		elif preferences.comp_software == "gaussian":
 			if mode == "print":
 				print("{} - Analyze log files in current and sub directories".format(idx))
@@ -220,118 +213,4 @@ class UserInterface:
 		"""Deploy scripts"""
 		if mode == "print":	print("{} - Deploy script".format(idx))
 		elif mode == "run":	deploy()
-
-#def user_interface_1():#INITIAL
-#	if preferences.comp_software == "orca":
-		#print("Chose an option:")
-		#print("0 - Exit")
-		#print(" ")
-		#print("2 - Create .inp files from .xyz files")
-		#if pbs: print("3 - Create .pbs files and a submission script from {} files".format(".inp"))
-		#else: print("3 - Validate {} files".format(".inp"))
-		#print(" ")
-		#print("5 - Insert .xyz geometries into the corresponding .inp files")
-		#print(" ")
-		#print("7 - Create .inp files from .log files")
-
-		#print("9 - More options")
-		#option=input()
-		#if   option == "0": exit(print("ok"))
-		#elif option == "1": pass
-		#elif option == "2": CreateInputs()
-		#elif option == "3":	validate_input(file_weeder(["inp"]))
-		#elif option == "4":	pass
-		#elif option == "5":	xyz_insert(file_weeder([".xyz"]))
-		#elif option == "6": pass
-		#elif option == "7":	CreateInputs(use_logs=True)
-
-		#elif option == "9":	user_interface_2()
-		#else: print("Invalid input. Could not process request!")
-		#user_interface_1()
-#	elif preferences.comp_software == "gaussian":
-		#print("Chose an option:")
-		#print("0 - Exit")
-		#print("1 - Create .xyz files from .log files")
-		#print("2 - Create {} files from .xyz files".format(preferences.gauss_ext))
-		#if pbs: print("3 - Create .pbs files and a submission script from {} files".format(preferences.gauss_ext))
-		#else: print("3 - Validate {} files".format(preferences.gauss_ext))
-		#print("4 - IRC or SCAN analysis")
-		#print("5 - Insert .xyz geometries into the corresponding {} files".format(preferences.gauss_ext))
-		#print("6 - Extract free energies from .log files")
-		#print("7 - Create {} files from .log files".format(preferences.gauss_ext))
-
-#		print("9 - More options")
-#		option=input()
-		#if   option == "0": exit(print("ok"))
-		#elif option == "1": log_to_xyz(file_weeder([".log"]))
-		#elif option == "2": CreateInputs()
-		#elif option == "3":	validate_input(file_weeder([preferences.gauss_ext]))
-		#elif option == "4":	log_to_xyz_scan(file_weeder([".log"]))
-		#elif option == "5":	xyz_insert(file_weeder([".xyz"]))
-		#elif option == "6": e_analysis(file_weeder([".log"]))
-		#elif option == "7":	CreateInputs(use_logs=True)
-
-#		elif option == "9":	user_interface_2()
-#		else: print("Invalid input. Could not process request!")
-#		user_interface_1()
-#def user_interface_2():#MORE OPTIONS
-#	if preferences.comp_software == "orca":
-#		print("Chose an option:")
-		#print("0 - Go back to previous menu")
-		#print("1 - Create E_profile.svg")
-		#print("2 - Create enantiomer of xyz files")
-		#print("3 - Move Files up a folder")
-		#print(" ")
-		#print("5 - Superimpose two xyz files")
-		#print("6 - Generate solvated .xyz's")
-		#print(" ")
-		#print("8 - Create .xyz files from .inp files")
-	#	print(" ")
-#		print("10 - Configure")
-#		print("11 - Deploy script")
-		#option=input()
-		#if   option == '0': user_interface_1()
-		#elif option == '1': vector_graph()
-		#elif option == "2":	xyz_ent()
-		#elif option == "3":	mv_up_folder()
-		#elif option == "4":	pass
-		#elif option == "5":	superimpose_alg()
-		#elif option == "6": geodes_int()
-		#elif option == "7":	pass
-#		elif option == "8": input_to_xyz()
-#		elif option == "9":	pass
-#		elif option == "10": preferences.set_variables()
-#		elif option == "11": deploy()
-#		else: print("Invalid input. Could not process request!")
-#		user_interface_2()
-#	elif preferences.comp_software == "gaussian":
-#		print("Chose an option:")
-#		print("0 - Go back to previous menu")
-#		print("1 - Create E_profile.svg")
-		#print("2 - Create enantiomer of xyz files")
-		#print("3 - Move Files up a folder")
-		#print("4 - Split frequency in two directions and create corresponding .xyzs")
-		#print("5 - Superimpose two xyz files")
-		#print("6 - Generate solvated .xyz's")
-		#print("7 - Deduplicate .log files")
-		#print("8 - Create .xyz files from {} files".format(preferences.gauss_ext))
-		#print("9 - Analyze log files in current and sub directories")
-#		print("10 - Configure")
-#		print("11 - Deploy script")
-#		option=input()
-#		if   option == '0': user_interface_1()
-#		elif option == '1': vector_graph()
-		#elif option == "2":	xyz_ent()
-		#elif option == "3":	mv_up_folder()
-		#elif option == "4":	log_freq_xyz(file_weeder([".log"]))
-		#elif option == "5":	superimpose_alg()
-		#elif option == "6": geodes_int()
-		#elif option == "7":	deduplicate()
-		#elif option == "8": input_to_xyz()
-		#elif option == "9":	csv_e_analysis()
-#		elif option == "10": preferences.set_variables()
-#		elif option == "11": deploy()
-#		else: print("Invalid input. Could not process request!")
-#		user_interface_2()
-
 

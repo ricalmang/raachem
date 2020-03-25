@@ -64,7 +64,7 @@ class CreateInputs:
 		option = True
 		while option == True: option = {str(i): str(i) for i in range(2)}.get(input(), True)
 		if option == "0": return
-		elif option == "1":	self.__init__()
+		elif option == "1":	self.__init__(use_logs=self.use_logs)
 	def find_idx(self,parameters):
 		lookup_str = "=====WILL BE GEOMETRY BLOCK====="
 		for idx, line in enumerate(parameters[1:]):

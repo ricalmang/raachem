@@ -23,7 +23,7 @@ def file_weeder(ext_to_weed,cf=os.getcwd(), promp=True):
 		matching = [s for s in fulllist if extension in s]
 		for match in matching: weeded_list.append(match)
 	if promp and len(weeded_list) == 0:
-		print("No {} files found in current directory!".format("or".join(ext_to_weed)))
+		print("No '{}' files found in current directory!".format("' or '".join(ext_to_weed)))
 		print(cf)
 		return []
 	return sorted(weeded_list)
