@@ -1,0 +1,14 @@
+%nprocshared=8
+%mem=15gb
+#T m06l/Gen Integral=UltraFine SCRF=(solvent=methanol,SMD) pseudo=read
+
+Title
+
+1 1
+=====WILL BE GEOMETRY BLOCK=====
+
+INSERT_GBS_BASIS
+
+INSERT_GBS_ECP
+
+
