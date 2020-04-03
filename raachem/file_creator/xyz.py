@@ -5,7 +5,6 @@ from raachem.file_class.xyz import XyzFile
 from raachem.file_class.inp import InpFile
 from raachem.file_class.gjf import GjfFile
 
-
 def xyz_ent():
 	weeded_list = file_weeder([".xyz"])
 	for i in weeded_list:

@@ -55,7 +55,7 @@ class UserInterface:
 			elif mode == "run":	log_to_xyz(file_weeder([".log"]))
 		elif preferences.comp_software == "gaussian":
 			if mode == "print":	print("{} - Create .xyz files from .log files".format(idx))
-			elif mode == "run":	log_to_xyz(file_weeder([".log"]))
+			elif mode == "run": log_to_xyz(file_weeder([".log"]))
 	@staticmethod
 	def func_02(mode="print",idx=None):
 		"""Create input files from .xyz files"""

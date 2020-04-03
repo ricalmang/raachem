@@ -1,186 +1,306 @@
 from raachem.file_class.xyz import XyzFile
 from raachem.util.constants import elements
+from raachem.util.gen_purp import is_str_float
 import functools
 
 class LogFile:
 	def __init__(self,file_content):
 		self.list = file_content
-		self.s_list = [a.split() for a in self.list]
-		assert any("Gaussian" in l for l in self.list[:10]),\
-			"Are you sure {} is a Gaussian log file?".format(self.name())
+		self.lenght = len(self.list)
+		self.name = self.list[0].strip()
+		self.empty_line_idxs = []
+		self.charge_mult = None
+		self.input_geom_idx = None
+		self.start_xyz_idxs = []
+		self.end_resume_idxs = []
+		self.start_resume_idxs = []
+		self.linked_job_idxs = []
+		self.multi_dash_idxs =[]
+		self.scf_done = []
+		####.thermal = ["ZPC","TCE","TCH","TCG","SZPE","STE","STH","STG"]
+		self.thermal = [None , None, None, None, None , None, None, None]
+		self.start_displ_block = None
+		self.oc_orb_energies = []
+		self.uno_orb_energies = []
+		self.hash_line_idxs = []
+		self.norm_term_idxs = []
+		self.errors = []
+		self.irc_points = []
+		self.scan_points = []
+		self.opt_points = []
+		for i,a in enumerate(a.strip() for a in self.list):
+			# i = index
+			# a = line.strip()
+			# b = line.split()
+			# c = len(b)
+			if a == "":                                                         self.empty_line_idxs.append(i); continue
+			if a[-1] == "@":                                                    self.end_resume_idxs.append(i); continue
+			elif a[0] == "1":
+				if a.startswith(r"1\1"):                                      self.start_resume_idxs.append(i); continue
+			if a[0].isdigit() or a[0].islower():                                                                continue
+			elif a[0] == "-":
+				if a.startswith("------"):                                      self.multi_dash_idxs.append(i); continue
+			elif a[0] == "!":
+				b = a.split(); c = len(b)
+				if c == 4:
+					condition_a = all(x in y for x,y in zip(b,("!",["Optimized","Non-Optimized"],"Parameters","!")))
+					if condition_a:                                          self.scan_points.append([i,b[1]]); continue
+			elif a[0] == "A":
+				text_a = "Alpha  occ. eigenvalues --"
+				text_b = "Alpha virt. eigenvalues --"
+				if a.startswith(text_a):
+					text = a.replace(text_a,"").split();                     self.oc_orb_energies.extend(text); continue
+				elif a.startswith(text_b):
+					text = a.replace(text_b,"").split();                    self.uno_orb_energies.extend(text); continue
+			elif a[0] == "C":
+				b = a.split(); c = len(b)
+				if all((a.startswith("Charge"),self.charge_mult is None, c == 6)):
+					pattern = ("Charge", "=", "Multiplicity", "=")
+					if all(x == b[n] for x,n in zip(pattern,(0,1,3,4))):
+						self.input_geom_idx = i;                                    self.charge_mult = b[2::3]; continue
+			elif a[0] == "E":
+				if a.startswith("Error"):                                                self.errors.append(i); continue
+			elif a[0] == "F":
+				condition_a = a.startswith("Frc consts  -- ") and self.start_displ_block is None
+				if condition_a:                                                 self.start_displ_block = i - 4; continue
+			elif a[0] == "I":
+				if a == "Input orientation:":                                self.start_xyz_idxs.append(i + 5); continue
+			elif a[0] == "L":
+				if a.startswith("Link1:"):                                      self.linked_job_idxs.append(i); continue
+			elif a[0] == "N":
+				if a.startswith("Normal termination of Gaussian"):               self.norm_term_idxs.append(i); continue
+			elif a[0] == "P":
+				b = a.split(); c = len(b)
+				if c != 6 or any(x != b[n] for x,n in zip(["Point","Number:","Path","Number:"],[0,1,3,4])):     continue
+				if any(not b[n].isnumeric() for n in [2, 5]):                                                   continue
+				else:                                                  self.irc_points.append([i, b[5], b[2]]); continue
+			elif a[0] == "S":
+				b = a.split(); c = len(b)
+				if a == "Standard orientation:":                             self.start_xyz_idxs.append(i + 5); continue
+				elif a.startswith("SCF Done:") and c > 5:                       self.scf_done.append([i,b[4]]); continue
+				elif a.startswith("Sum of electronic and zero-point Energies="):       self.thermal[4] = b[-1]; continue
+				elif a.startswith("Sum of electronic and thermal Energies="):          self.thermal[5] = b[-1]; continue
+				elif a.startswith("Sum of electronic and thermal Enthalpies="):        self.thermal[6] = b[-1]; continue
+				elif a.startswith("Sum of electronic and thermal Free Energies="):     self.thermal[7] = b[-1]; continue
+				elif a.startswith("Step") and c == 9:
+					x = ["Step", "number", "out", "of", "a", "maximum", "of"]
+					y = [0, 1, 3, 4, 5, 6, 7]
+					z = all(b[n].isnumeric() for n in [2, 8])
+					if all(d == b[n] for d,n in zip(x,y)) and z:                     self.opt_points.append(i); continue
+			elif a[0] == "T":
+				b = a.split()
+				if a.startswith("Thermal correction to Energy="):                      self.thermal[1] = b[-1]; continue
+				elif a.startswith("Thermal correction to Enthalpy="):                  self.thermal[2] = b[-1]; continue
+				elif a.startswith("Thermal correction to Gibbs Free Energy="):         self.thermal[3] = b[-1]; continue
+			elif a[0] == "Z":
+				b = a.split()
+				if a.startswith("Zero-point correction="):                             self.thermal[0] = b[-2]; continue
+			elif a[0] == "#":                                                    self.hash_line_idxs.append(i); continue
+		#--------------------------------------------POST PROCESSING----------------------------------------------------
+		x = None if self.start_xyz_idxs is None else [min(a for a in self.multi_dash_idxs if a > b) for b in self.start_xyz_idxs]
+		self.end_xyz_idxs = x
+		self.scan_end = [min(a for a in self.multi_dash_idxs if a > b[0]) for b in self.scan_points]
+		x = None if self.start_displ_block is None else min(a for a in self.empty_line_idxs if a > self.start_displ_block)
+		self.end_displ_block = x
+		self.displ_block = None if self.end_displ_block is None else self.list[self.start_displ_block:self.end_displ_block]
+		x = None if self.hash_line_idxs is None else min(a for a in self.multi_dash_idxs if a > self.hash_line_idxs[0])
+		x = None if self.hash_line_idxs is None else "".join([a.lstrip() for a in self.list[self.hash_line_idxs[0]:x]])
+		self.raw_route = x
+		try:
+			self.oc_orb_energies = [float(b) for b in self.oc_orb_energies]
+			self.uno_orb_energies = [float(a) for a in self.uno_orb_energies]
+			self.homo = max(self.oc_orb_energies) if self.oc_orb_energies else None
+			self.lumo = min(self.uno_orb_energies) if self.uno_orb_energies else None
+			self.homo_lumo_gap = self.lumo - self.homo if not any([self.lumo is None, self.homo is None]) else None
+		except ValueError as e:
+			print("Error finding homo and lumo energies")
+			print(e)
+			print(self.name)
+			self.homo, self.lumo, self.homo_lumo_gap = None, None, None
+		if all([self.start_resume_idxs,self.end_resume_idxs]):
+			x = ["".join([x.strip() for x in self.list[a:b]]).split("\\") for a,b in zip(self.start_resume_idxs,self.end_resume_idxs)]
+			self.resumes = x
+		else: self.resumes = None
+		# --------------------------------------------------ASSURANCE---------------------------------------------------
+		self.init_errors = []
+		if self.charge_mult is None:
+			self.init_errors.append("Charge and multiplicity could not be identified!")
+		if len(self.start_resume_idxs) != len(self.end_resume_idxs):
+			self.init_errors.append("Inconsistent resumes")
+		if len(self.name.split()) != 1:
+			self.init_errors.append("Name must not contain empty spaces or be empty")
+		if not self.list[1].strip().startswith("Entering Gaussian System"):
+			self.init_errors.append("Is this a Gaussian log file?")
+		if not self.start_xyz_idxs is None:
+			if len(self.start_xyz_idxs) != len(self.end_xyz_idxs):
+				self.init_errors.append("Found an inconsistent number of geometries")
+		if not any([self.homo is None, self.lumo is None]):
+			if self.homo > self.lumo:
+				self.init_errors.append("Lumo is lower than homo?")
+		if self.init_errors:
+			for a in self.init_errors: print(a)
+			print("Errors above were found on file\n {}".format(self.name))
+		#self.loghelp()
+		#print(self.raw_route)
+		#print(self.calc_type())
+		#print(self.first_xyz_obj())
 	@functools.lru_cache(maxsize=1)
-	def name(self):
-		if len(self.list[0]) == 0:raise Exception(".log Object has no name")
-		else: return self.list[0]
-	@functools.lru_cache(maxsize=1)
-	def charge_mult(self):
-		pattern = ("Charge", "=","value", "Multiplicity","=", "value")
-		nums = (0,1,3,4)
-		for i,a in enumerate(self.list):
-			if i > 150: print("CM not found\nIt will be assumed to be 0 1");return ["0", "1"]
-			elif len(a.split()) != 6: continue
-			elif not all([b == c for d,(b,c) in enumerate(zip(a.split(),pattern)) if d in nums]): continue
-			else: return a.split()[2::3]
-	@functools.lru_cache(maxsize=1)
-	def start_xyz_idxs(self):
-		indexes = [i+5 for i,l in enumerate(self.s_list) if len(l) == 2 and "orientation:" == l[-1]]
-		if len(indexes) == 0: raise Exception("No cartesian coordinates found for {}!".format(self.name()))
-		return indexes
-	@functools.lru_cache(maxsize=1)
-	def end_xyz_idxs(self):
-		one_el = [i for i,l in enumerate(self.s_list) if len(l) == 1]
-		end_idxs = [min(a for a in one_el if a > num) for num in self.start_xyz_idxs()]
-		if len(end_idxs) != len(self.start_xyz_idxs()): raise Exception("Inconsistent number of geometries in object {}!".format(self.name))
-		return end_idxs
+	def loghelp(self):
+		for a in vars(self):
+			if a != "list":
+				print(a.upper(),"--->",getattr(self,a))
 	@functools.lru_cache(maxsize=1)
 	def xyz_cord_block(self,start_idx,end_idx):
-		return [[elements[int(l[1])],*[l[i] for i in [3,4,5]]] for l in self.s_list[start_idx:end_idx]]
+		data = [a.split() for a in self.list[start_idx:end_idx]]
+		return [[elements[int(l[1])],*[l[i] for i in [3,4,5]]] for l in data]
 	@functools.lru_cache(maxsize=1)
 	def last_cord_block(self):
-		return self.xyz_cord_block(self.start_xyz_idxs()[-1],self.end_xyz_idxs()[-1])
+		if not all([self.xyz_cord_block, self.end_xyz_idxs]):
+			if self.resumes:
+				print("WARNING: Coordinates will be drawn from the last job abstract:")
+				print("lines {} - {} of file:".format(self.start_resume_idxs[-1],self.end_resume_idxs[-1]))
+				print("{}".format(self.name))
+				return LogAbstract(self.resumes[0]).xyz_object().cord_block()
+			else: return None
+		else:
+			return self.xyz_cord_block(self.start_xyz_idxs[-1],self.end_xyz_idxs[-1])
 	@functools.lru_cache(maxsize=1)
 	def first_cord_block(self):
-		return self.xyz_cord_block(self.start_xyz_idxs()[0],self.end_xyz_idxs()[0])
+		if not all([self.start_xyz_idxs,self.end_xyz_idxs]):
+			if self.input_geom_idx:
+				coordinates = []
+				for a in self.list[self.input_geom_idx:]:
+					a = a.split()
+					if len(a) == 4:
+						if a[0] in elements and all(is_str_float(a[n]) for n in [1, 2, 3]):
+							coordinates.append(a)
+						elif coordinates: break
+					elif coordinates: break
+				return coordinates
+			else: return None
+		else:
+			return self.xyz_cord_block(self.start_xyz_idxs[0],self.end_xyz_idxs[0])
 	@functools.lru_cache(maxsize=1)
-	def n_atoms(self):
-		return len(self.first_cord_block())
+	def _n_atoms(self):
+		if self.last_cord_block():
+			return len(self.last_cord_block())
+		elif self.first_cord_block():
+			return len(self.first_cord_block())
 	def any_xyz_obj(self,a_idx,b_idx,title=" ",name=False):
-		if name == False: name = self.name()
-		return XyzFile([name, self.n_atoms(), title, *(" ".join(l) for l in self.xyz_cord_block(a_idx,b_idx))])
+		if name == False: name = self.name
+		return XyzFile([name, self.n_atoms, title, *(" ".join(l) for l in self.xyz_cord_block(a_idx,b_idx))])
 	@functools.lru_cache(maxsize=1)
 	def last_xyz_obj(self):
-		return XyzFile([self.name(),self.n_atoms()," ",*(" ".join(l) for l in self.last_cord_block())])
+		return XyzFile([self.name,self.n_atoms," ",*(" ".join(l) for l in self.last_cord_block())])
 	@functools.lru_cache(maxsize=1)
 	def first_xyz_obj(self):
-		return XyzFile([self.name(),self.n_atoms()," ",*(" ".join(l) for l in self.first_cord_block())])
-	@functools.lru_cache(maxsize=1)
-	def scf_done(self):
-		scf = [[idx,l.split()[4]] for idx,l in enumerate(self.list) if "SCF Done:" in l]
-		if len(scf) == 0: raise Exception("Could not find string 'SCF Done:' in {} file".format(self.name()))
-		return scf
-	@functools.lru_cache(maxsize=1)
-	def first_thermal(self):
-		thermal = ["ZPC","TCE","TCH","TCG","SZPE","STE","STH","STG"]
-		freq = False
-		for line in self.list:
-			if "Zero-point correction=" in line: freq = True
-			if not freq: continue
-			if "Zero-point correction=" in line: thermal[0] = line.split()[-2]
-			elif "Thermal correction to Energy=" in line:thermal[1] = line.split()[-1]
-			elif "Thermal correction to Enthalpy=" in line:thermal[2] = line.split()[-1]
-			elif "Thermal correction to Gibbs Free Energy=" in line:thermal[3] = line.split()[-1]
-			elif "Sum of electronic and zero-point Energies=" in line:thermal[4] = line.split()[-1]
-			elif "Sum of electronic and thermal Energies=" in line:thermal[5] = line.split()[-1]
-			elif "Sum of electronic and thermal Enthalpies=" in line:thermal[6] = line.split()[-1]
-			elif "Sum of electronic and thermal Free Energies=" in line:thermal[7] = line.split()[-1]
-			if all(a != i for a,i in zip(("ZPC","TCE","TCH","TCG","SZPE","STE","STH","STG"),thermal)):
-				return [float(i) for i in thermal]
-		return False
-	@functools.lru_cache(maxsize=1)
-	def displ_block(self):
-		block = ["start","end"]
-		for idx_s,line in enumerate(self.list):
-			if not "Frc consts  -- " in line: continue
-			block[0] = idx_s-4
-			for idx_e,line in enumerate(self.list[idx_s:]):
-				if len(line.split()) != 0: continue
-				block[1] = idx_e+idx_s
-				break
-			break
-		if block[0] == "start" or block[1] == "end": return False
-		else: return self.list[block[0]:block[1]]
+		return XyzFile([self.name,self.n_atoms," ",*(" ".join(l) for l in self.first_cord_block())])
 	@functools.lru_cache(maxsize=1)
 	def frequencies(self):
-		if self.displ_block() == False:	return False
-		return [j for a in [i.split()[2:] for i in self.displ_block()[2::self.n_atoms()+7]] for j in a]
+		if self.displ_block is None: return False
+		else: return [j for a in [i.split()[2:] for i in self.displ_block[2::self.n_atoms+7]] for j in a]
 	@functools.lru_cache(maxsize=1)
 	def displ_for_freq_idx(self,freq_idx):
-		if self.displ_block() == False:	return False
+		if self.displ_block is None: return []
 		displ = []
-		for num in range(self.n_atoms()):
-			displ.append([j for a in [i.split()[2:] for i in self.displ_block()[7+num::self.n_atoms()+7]] for j in a])
+		for num in range(self.n_atoms):
+			displ.append([j for a in [i.split()[2:] for i in self.displ_block[7+num::self.n_atoms+7]] for j in a])
 		displ_for_freq_str = [a[freq_idx*3:freq_idx*3+3] for a in displ]
 		displ_for_freq_float = [[float(i) for i in b] for b in displ_for_freq_str]
 		return displ_for_freq_float
 	@functools.lru_cache(maxsize=1)
-	def oc_orb_energies(self):
-		oc_orb_energies = []
-		for i in [x for l in [line.split() for line in self.list if "occ. eigenvalues" in line] for x in l]:
-			try: oc_orb_energies.append(float(i))
-			except: pass
-		return oc_orb_energies
+	def _calc_type(self):
+		if self.raw_route:
+			r_sect = [self.raw_route]
+			for x in [None, "/", "(", ")", ",", "=", "%", ":"]:
+				r_sect = [a for b in [i.split(x) for i in r_sect] for a in b if len(a) > 1]
+			r_sect = [a.lower() for a in r_sect]
+			if "ts" in r_sect: return "TS"
+			elif any(True for a in r_sect if a in ("modredundant", "readoptimize", "readfreeze")): return "Red"
+			elif "irc" in r_sect: return "IRC"
+			elif "opt" in r_sect: return "Opt"
+			else: return "SP"
+		else: return "No data"
 	@functools.lru_cache(maxsize=1)
-	def uno_orb_energies(self):
-		uno_orb_energies = []
-		for i in [x for l in [line.split() for line in self.list if "virt. eigenvalues" in line] for x in l]:
-			try: uno_orb_energies.append(float(i))
-			except: pass
-		return uno_orb_energies
-	@functools.lru_cache(maxsize=1)
-	def homo_lumo_gap(self):
-		return min(self.uno_orb_energies())-max(self.oc_orb_energies())
-	@functools.lru_cache(maxsize=1)
-	def calc_type(self):
-		up_to = 100 if len(self.list) > 100 else len(self.list)
-		dashes = [i for i,a in enumerate(self.list[:up_to]) if a.lstrip().startswith("--------")]
-		route = [i for i,a in enumerate(self.list[:up_to]) if a.lstrip().startswith("#")][0]
-		r_sect = self.list[max(a for a in dashes if a < route)+1:min(a for a in dashes if a > route)]
-		for x in [None, "/", "(", ")", ",", "=", "%", ":"]:
-			r_sect = [a for b in [i.split(x) for i in r_sect] for a in b if len(a) > 1]
-		r_sect = [a.lower() for a in r_sect]
-		if "ts" in r_sect: return "TS"
-		elif any(True for a in r_sect if a in ("modredundant", "readoptimize", "readfreeze")): return "Red"
-		elif "irc" in r_sect: return "IRC"
-		elif "opt" in r_sect: return "Opt"
-		else: return "SP"
-	@functools.lru_cache(maxsize=1)
-	def normal_termin(self):
+	def _normal_termin(self):
 		return any(True if "Normal termination of Gaussian" in l else False for l in self.list[-5:])
+	def _error_msg(self):
+		error_idxs = [a for a in self.errors if a + 5 > self.lenght]
+		if error_idxs: return " | ".join([self.list[n] for n in error_idxs])
+		else: return "No data"
 	@functools.lru_cache(maxsize=1)
 	def irc(self):
-		points = []
-		for i,a in enumerate(self.s_list):
-			if len(a) != 6: continue
-			if any(c != a[b] for c,b in zip(["Point","Number:","Path","Number:"],[0,1,3,4])): continue
-			if any(not a[b].isnumeric() for b in [2,5]): continue
-			else: points.append([i,a[5],a[2]])
-		scf = [max(self.scf_done(),key=lambda x: x[0] if x[0] < a[0] else 0)[1] for a in points]
-		a_idx = [max(self.start_xyz_idxs(),key=lambda x: x if x < a[0] else 0) for a in points]
-		b_idx = [max(self.end_xyz_idxs(),key=lambda x: x if x < a[0] else 0) for a in points]
+		if not all([self.start_xyz_idxs,self.end_xyz_idxs,self.irc_points,self.scf_done]): return []
+		points = self.irc_points
+		scf = [max(self.scf_done,key=lambda x: x[0] if x[0] < a[0] else 0)[1] for a in points]
+		a_idx = [max(self.start_xyz_idxs,key=lambda x: x if x < a[0] else 0) for a in points]
+		b_idx = [max(self.end_xyz_idxs,key=lambda x: x if x < a[0] else 0) for a in points]
 		points = [[*d[1:],c,self.any_xyz_obj(a,b,title=c)] for a,b,c,d in zip(a_idx,b_idx,scf,points)]
 		path_a = sorted([a for a in points if a[0] == "1"], key = lambda x: int(x[1]), reverse=True)
 		path_b = [a for a in points if a[0] == "2"]
 		return [a[3] for a in [*path_a,*path_b]]
 	@functools.lru_cache(maxsize=1)
 	def opt(self):
-		points = []
-		for i,a in enumerate(self.s_list):
-			if len(a) != 9: continue
-			if any(c != a[b] for c,b in zip(["Step","number","out","of","a","maximum","of"],[0,1,3,4,5,6,7])): continue
-			if any(not a[b].isnumeric() for b in [2,8]): continue
-			else: points.append(i)
-		scf = [max(self.scf_done(),key=lambda x: x[0] if x[0] < a else 0)[1] for a in points]
-		a_idx = [max(self.start_xyz_idxs(),key=lambda x: x if x < a else 0) for a in points]
-		b_idx = [max(self.end_xyz_idxs(),key=lambda x: x if x < a else 0) for a in points]
+		if not all([self.start_xyz_idxs,self.end_xyz_idxs,self.opt_points,self.scf_done]): return []
+		points = self.opt_points
+		scf = [max(self.scf_done,key=lambda x: x[0] if x[0] < a else 0)[1] for a in points]
+		a_idx = [max(self.start_xyz_idxs,key=lambda x: x if x < a else 0) for a in points]
+		b_idx = [max(self.end_xyz_idxs,key=lambda x: x if x < a else 0) for a in points]
 		return [self.any_xyz_obj(a,b,title=c) for a,b,c in zip(a_idx,b_idx,scf)]
 	@functools.lru_cache(maxsize=1)
 	def scan_geoms(self):
+		if not all([self.start_xyz_idxs, self.end_xyz_idxs, self.scan_points, self.scf_done]): return []
 		geoms = []
-		for idx,line in enumerate(self.s_list):
-			if len(line) != 4: continue
-			if any(a != line[b] for a,b in zip(("!","Parameters","!"),(0,2,3))):continue
-			if all(line[1] != i for i in ("Optimized","Non-Optimized")):continue
-			try:
-				start_idx = min(i for i in self.start_xyz_idxs() if i > idx)
-				end_idx = min(i for i in self.end_xyz_idxs() if i > idx)
-				scf_idx = max(i for i in self.scf_done() if i[0] < idx)
-				name = self.name().replace(".log","_" + str(len(geoms)+1)+".xyz")
-				if line[1] == "Optimized": print("Optimized geometry found at line {}!".format(idx+1))
-				elif line[1] == "Non-Optimized": print("Non-Optimized1 geometry found at line {}!".format(idx+1))
-				geoms.append(self.any_xyz_obj(start_idx,end_idx,title=str(scf_idx[1]), name=name))
-			except ValueError:
-				print("WARNING: Linked Jobs may or may not be appended")
-				pass
+		points = self.scan_points
+		start_idx = [min(i for i in self.start_xyz_idxs if i > b[0]) for b in points]
+		end_idx = [min(i for i in self.end_xyz_idxs if i > b[0]) for b in points]
+		scf_idx = [max(i for i in self.scf_done if i[0] < b[0]) for b in points]
+		for i,(a,b,c,d) in enumerate(zip(start_idx,end_idx,scf_idx,self.scan_points)):
+			name = self.name().replace(".log","_" + str(i+1)+".xyz")
+			if d[1] == "Optimized": print("Optimized geometry found at line {}!".format(d[0]))
+			elif d[1] == "Non-Optimized": print("Non-Optimized1 geometry found at line {}!".format(d[0]))
+			geoms.append(self.any_xyz_obj(a,b,title=str(c[1]), name=name))
 		if len(geoms) == 0:
 			print("No Optimized geometries found for {} file".format(self.name()))
 		return geoms
+
+	n_atoms = property(_n_atoms)
+	normal_termin = property(_normal_termin)
+	calc_type = property(_calc_type)
+	error_msg = property(_error_msg)
+
+class LogAbstract:
+	def __init__(self,content):
+		self.list = content
+		self.version = None
+		self.dipole = None
+		self.img_freq = None
+		self.hash_line = None
+		for i,a in enumerate(self.list):
+			a = a.lstrip()
+			if a.lstrip == "": print("Empty!");continue
+			elif a.startswith("Version="): self.version = a.replace("Version=","")
+			elif a.startswith("#"): self.hash_line = i
+			elif a.startswith("NImag="): self.img_freq = a.replace("NImag=0","")
+			elif a.startswith("DipoleDeriv="): self.img_freq = a.replace("DipoleDeriv=","")
+			else: continue
+	def __str__(self):
+		return "\n".join(self.list)
+	def read_strucure(self):
+		charge_mult = None
+		title = None
+		coordinates = []
+		for a in self.list[self.hash_line:]:
+			a = a.split(",")
+			if len(a) == 2 and not coordinates:	charge_mult = a; continue
+			if len(a) == 4:
+				if a[0] in elements and all(is_str_float(a[n]) for n in [1,2,3]):
+					coordinates.append("   ".join(a))
+				elif coordinates: break
+			elif coordinates: break
+		return charge_mult, XyzFile([self.list[0],str(len(coordinates)),title,*coordinates])
+	def charge_mult(self):
+		return self.read_strucure()[0]
+	def xyz_object(self):
+		return self.read_strucure()[1]
+

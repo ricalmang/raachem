@@ -84,7 +84,7 @@ class CreateInputs:
 			inp_out = []
 			for idx_a, line in enumerate(parameters[0:index]):
 				if self.use_logs and idx_a + 1 == len(parameters[0:index]):
-					line = "* " + " ".join(LogFile(read_item(i)).charge_mult())
+					line = "* " + " ".join(LogFile(read_item(i)).charge_mult)
 				inp_out.append(line.replace("FILENAME", i.replace(self.original_ext, "")) + "\n")
 			for line in xyz.form_cord_block():
 				inp_out.append(line + "\n")
@@ -120,7 +120,7 @@ class CreateInputs:
 				continue
 			xyz = LogFile(read_item(i)).last_xyz_obj() if self.use_logs else XyzFile(read_item(i))
 			for idx_a,line in enumerate(parameters[0:index]):
-				if self.use_logs and idx_a+1 == len(parameters[0:index]): line = " ".join(LogFile(read_item(i)).charge_mult())
+				if self.use_logs and idx_a+1 == len(parameters[0:index]): line = " ".join(LogFile(read_item(i)).charge_mult)
 				gjf_out.append(line.replace("FILENAME",i.replace(self.original_ext,""))+"\n")
 			for line in xyz.form_cord_block():
 				gjf_out.append(line+"\n")

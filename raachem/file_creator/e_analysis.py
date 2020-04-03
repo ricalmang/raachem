@@ -1,6 +1,6 @@
 import os, shutil
 from raachem.file_class.log import LogFile
-from raachem.util.gen_purp import file_weeder, read_item, preferences
+from raachem.util.gen_purp import file_weeder, read_item, preferences, timeit
 
 
 def e_analysis(weeded_list):
@@ -12,8 +12,8 @@ def e_analysis(weeded_list):
 	rel_e = []
 	for i in weeded_list:
 		log = LogFile(read_item(i))
-		t = log.first_thermal()
-		try: last_SCF = log.scf_done()[-1][-1]
+		t = log.thermal
+		try: last_SCF = log.scf_done[-1][-1]
 		except: last_SCF = "None"
 		if t == False: out.append("{:<30} no_thermo_data_found_Last_SCF: {:>20}".format(i, last_SCF)); continue
 		out.append("{:<30}{:>20}{:>20}{:>20}".format(i, t[7], t[3], last_SCF))
@@ -42,7 +42,7 @@ def rel_scf(list=False):
 	energies = []
 	for i in file_weeder([".log"]):
 		log = LogFile(read_item(i))
-		energies.append([log.name(), log.scf_done()[-1][1], log.normal_termin()])
+		energies.append([log.name, log.scf_done[-1][1], log.normal_termin])
 	if len(energies) == 0: print("No .log files in current folder"); return
 	energies = [[i[0], float(i[1]), i[2]] for i in energies]
 	energies.sort(key=lambda x: x[1])
@@ -50,7 +50,7 @@ def rel_scf(list=False):
 	energies = [[i[0], (i[1] - min_e) * 627.509, i[2]] for i in energies]
 	if list == False: print("\n".join(["{:>30}{:>15f}{:>5}".format(*l) for l in energies]))
 	elif list == True: return energies
-
+@timeit
 def csv_e_analysis():
 	def evaluate_list(folder, logs=[]):
 		for file in os.listdir(folder):
@@ -64,22 +64,23 @@ def csv_e_analysis():
 		try:
 			log = LogFile(read_item(os.path.relpath(a, os.getcwd())))
 			# line = ["Termination","Free energy","Enthalphy","last_SCF","negativeFreq","TYP","File","Folder"]
-			line = ["Yes" if log.normal_termin() else "No",
-					str(log.first_thermal()[7]) if log.frequencies() else "No data",
-					str(log.first_thermal()[6]) if log.frequencies() else "No data",
-					str(log.scf_done()[-1][-1]) if log.normal_termin() else "No data",
+			line = ["Yes" if log.normal_termin else "No",
+					str(log.thermal[7]) if log.frequencies() else "No data",
+					str(log.thermal[6]) if log.frequencies() else "No data",
+					str(log.scf_done[-1][-1]) if log.normal_termin else "No data",
 					str(len([a for a in log.frequencies() if float(a) < 0])) if log.frequencies() else "No data",
-					log.calc_type(),
+					log.calc_type,
 					a,
-					os.path.dirname(a)]
+					os.path.dirname(a),
+					log.error_msg]
 			csv_list.append(line)
 			if i+1 < last: print("\rEvaluating... {}/{}".format(i+1,last),end="")
-			else: print("\rEvaluation done ({}/{}), saving svg file...".format(i+1,last))
+			else: print("\rEvaluation done ({}/{}), saving '.csv' file...".format(i+1,last))
 		except Exception as e: print("\nError on file:\n{}\n".format(a));print(e,"\n")
 	if not csv_list: return print("No .log files in {} directory".format(os.getcwd()))
 	csv_list.sort(key=lambda x: x[0], reverse=True)
 	csv_code = ["Free energy, +A, +B, +C, +D, -E, -F, Complex, Rel_E,-Freq ," +
-				"TYP , Filename , INP , LOG , FOLD , Folder name, Done?, last_SCF, Hentalphy"]
+				"TYP , Filename , INP , LOG , FOLD , Folder name, Done?, last_SCF, Hentalphy,Error msg"]
 	for idx,line in enumerate(csv_list):
 		row = [line[1],
 			*["-" for _ in range(7)],
@@ -93,14 +94,19 @@ def csv_e_analysis():
 			os.path.relpath(line[7], os.getcwd()),
 			line[0],
 			line[3],
-			line[2]]
+			line[2],
+			line[8]]
 		csv_code.append(",".join(row))
-	with open("linked_analysis.csv", mode="w",newline="\n") as file: file.write("\n".join(csv_code))
+	try:
+		with open("linked_analysis.csv", mode="w",newline="\n") as file: file.write("\n".join(csv_code))
+	except PermissionError:
+		print("Error while saving file!\nIs the file '{}' already open?".format("linked_analysis.csv"))
+		return
 	print("Done, please lookup:\n{}".format(os.path.join(os.getcwd(), "linked_analysis.csv")))
 
 def deduplicate():
 	print("Analyzing energies...")
-	energies = [[b.name(),float(b.scf_done()[-1][1]),b.normal_termin(),b.last_xyz_obj()] for i in file_weeder([".log"]) for b in [LogFile(read_item(i))]]
+	energies = [[b.name,float(b.scf_done[-1][1]),b.normal_termin,b.last_xyz_obj()] for i in file_weeder([".log"]) for b in [LogFile(read_item(i))]]
 	unique = energies
 	if not unique: print("No log files to be analyzed"); return
 	black_list, folder_mov = [], []
