@@ -142,7 +142,6 @@ class LogFile:
 			print("Errors above were found on file\n {}".format(self.name))
 		#self.loghelp()
 		#print(self.raw_route)
-		#print(self.calc_type())
 		#print(self.first_xyz_obj())
 	@functools.lru_cache(maxsize=1)
 	def loghelp(self):
