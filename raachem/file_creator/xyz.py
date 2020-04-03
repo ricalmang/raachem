@@ -40,9 +40,9 @@ def log_to_xyz_scan(weeded_list):
 	else:
 		for item in [int(i)-1 for i in option]:
 			log = LogFile(read_item(weeded_list[item]))
-			if log.calc_type().lower() == "red": xyzs = log.scan_geoms(); ext_name = "_scan_traject.xyz"
-			elif log.calc_type().lower() == "irc": xyzs = log.irc(); ext_name = "_irc_traject.xyz"
-			elif log.calc_type().lower() in ["opt","ts"]: xyzs = log.opt(); ext_name = "_opt_traject.xyz"
+			if log.calc_type.lower() == "red": xyzs = log.scan_geoms(); ext_name = "_scan_traject.xyz"
+			elif log.calc_type.lower() == "irc": xyzs = log.irc(); ext_name = "_irc_traject.xyz"
+			elif log.calc_type.lower() in ["opt","ts"]: xyzs = log.opt(); ext_name = "_opt_traject.xyz"
 			else: print("The file is not a scan, opt or irc log file"); continue
 			if len(xyzs) < 2: print("The file contains less than 2 steps"); return
 			max_e = max(float(i.title()) for i in xyzs)

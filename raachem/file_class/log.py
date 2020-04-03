@@ -255,7 +255,7 @@ class LogFile:
 		end_idx = [min(i for i in self.end_xyz_idxs if i > b[0]) for b in points]
 		scf_idx = [max(i for i in self.scf_done if i[0] < b[0]) for b in points]
 		for i,(a,b,c,d) in enumerate(zip(start_idx,end_idx,scf_idx,self.scan_points)):
-			name = self.name().replace(".log","_" + str(i+1)+".xyz")
+			name = self.name.replace(".log","_" + str(i+1)+".xyz")
 			if d[1] == "Optimized": print("Optimized geometry found at line {}!".format(d[0]))
 			elif d[1] == "Non-Optimized": print("Non-Optimized1 geometry found at line {}!".format(d[0]))
 			geoms.append(self.any_xyz_obj(a,b,title=str(c[1]), name=name))
