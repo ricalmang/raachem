@@ -168,7 +168,8 @@ class LogFile:
 		if not all([self.start_xyz_idxs,self.end_xyz_idxs]):
 			if self.input_geom_idx:
 				coordinates = []
-				for a in self.list[self.input_geom_idx:]:
+				for i,a in enumerate(self.list[self.input_geom_idx:]):
+					if i > 5 and not coordinates: break
 					a = a.split()
 					if len(a) == 4:
 						if a[0] in elements and all(is_str_float(a[n]) for n in [1, 2, 3]):
@@ -289,7 +290,8 @@ class LogAbstract:
 		charge_mult = None
 		title = None
 		coordinates = []
-		for a in self.list[self.hash_line:]:
+		for i,a in enumerate(self.list[self.hash_line:]):
+			if i > 5 and not coordinates: break
 			a = a.split(",")
 			if len(a) == 2 and not coordinates:	charge_mult = a; continue
 			if len(a) == 4:
