@@ -72,6 +72,7 @@ def timeit(method):
 		print('{}:{} ms'.format(method.__name__, (te - ts) * 1000))
 		return result
 	return timed
+
 class Var:
 	conf_dir = os.path.dirname(__file__)
 	conf_file = os.path.join(conf_dir, "user.txt")
@@ -87,6 +88,7 @@ class Var:
 		self.folder_op = True
 		self.gauss_ext = ".com"
 		self.comp_software = "gaussian"
+		#self.menu_a = "01 02 03 04 05 06 07 08 09"
 		self.read_variables()
 	def read_variables(self,conf_file=conf_file):
 		if not os.path.isfile(conf_file): return
@@ -101,6 +103,7 @@ class Var:
 			elif a[0] == "folder_op": setattr(self, a[0], a[1].lower() == "true")
 			elif a[0] == "gauss_ext": setattr(self, a[0], a[1].lower() if a[1].lower() in [".gjf",".com"] else ".com")
 			elif a[0] == "comp_software": setattr(self, a[0], a[1].lower() if a[1].lower() == "orca" else "gaussian")
+			#elif a[0] == "menu_a":setattr(self,a[0]," ".join(a[1:]))
 			else: setattr(self,a[0],a[1])
 		return
 	def set_variables(self):
@@ -144,9 +147,15 @@ class Var:
 				break
 			self.write_save()
 	def write_save(self,conf_file=conf_file):
-		output = "\n".join(["{} = {}".format(a,getattr(self,a,)) for a in vars(self)])
-		with open(conf_file, mode="w", newline="\n") as file: file.write(output)
+		with open(conf_file, mode="r") as file: options = file.readlines()
+		output = []
+		for line in options:
+			for a in vars(self):
+				if line.startswith(a):
+					line = "{} = {}".format(a,getattr(self,a))
+			output.append(line)
+		with open(conf_file, mode="w", newline="\n") as file:
+			file.write("\n".join(output))
 		global preferences
 		preferences = Var()
-
 preferences = Var()
