@@ -1,7 +1,6 @@
 ############################RAACHEM IMPORTS###############################
 from raachem.file_creator.e_analysis import e_analysis, csv_e_analysis, deduplicate
 from raachem.file_creator.input import CreateInputs, xyz_insert, validate_input
-from raachem.file_creator.svg import vector_graph
 from raachem.file_creator.xyz import input_to_xyz, log_to_xyz, log_to_xyz_scan, log_freq_xyz, superimpose_alg, geodes_int, xyz_ent
 from raachem.file_creator.deploy_scripts import deploy
 from raachem.util.gen_purp import file_weeder, mv_up_folder, preferences
@@ -14,10 +13,10 @@ class UserInterface:
 					   self.func_03,self.func_04,self.func_05,
 					   self.func_06,self.func_07,self.func_21,
 					   self.func_09]
-		self.menu_b = [self.func_10,self.func_11,self.func_12,
-					   self.func_13,self.func_14,self.func_15,
-					   self.func_16,self.func_17,self.func_18,
-					   self.func_19,self.func_20]
+		self.menu_b = [self.func_10,self.func_12,self.func_13,
+					   self.func_14,self.func_15,self.func_16,
+					   self.func_17,self.func_18,self.func_20,
+					   self.func_19,]
 		try:
 			import raapbs
 			self.pbs = True
@@ -129,8 +128,8 @@ class UserInterface:
 	@staticmethod
 	def func_11(mode="print",idx=None):
 		"""Create energy profile as .svg"""
-		if mode == "print":	print("{} - Create E_profile.svg".format(idx))
-		elif mode == "run":	vector_graph()
+		if mode == "print":	pass
+		elif mode == "run":	pass
 	@staticmethod
 	def func_12(mode="print",idx=None):
 		"""Return enantiomer of xyz file"""
