@@ -4,7 +4,6 @@ from raachem.file_creator.input import CreateInputs, xyz_insert, validate_input
 from raachem.file_creator.xyz import input_to_xyz, log_to_xyz, log_to_xyz_scan, log_freq_xyz, superimpose_alg, geodes_int, xyz_ent
 from raachem.file_creator.deploy_scripts import deploy
 from raachem.util.gen_purp import file_weeder, mv_up_folder, preferences
-
 ###############################INTERFACE##################################
 
 class UserInterface:
