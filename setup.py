@@ -12,6 +12,8 @@ setuptools.setup(
     long_description=long_description,
 	license="MIT",
     url="https://github.com/ricalmang/raachem",
+	download_url = 'https://github.com/ricalmang/raachem/archive/v0.0.3.tar.gz',
+	keywords = ['chemistry'],
 	install_requires = ["numpy"],
     packages=setuptools.find_packages(),
 	package_data = {"":["*.GAUSSIAN","*.ORCA","*.gbs"]},

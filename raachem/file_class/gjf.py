@@ -1,7 +1,8 @@
 from raachem.util.constants import elements
 from raachem.file_class.xyz import XyzFile
-import functools
+import functools, re
 class GjfFile:
+	pattern = re.compile(r"[0-9][0-9][Gg]\+")
 	def __init__(self,file_content):
 		self.list = file_content
 		self.list_l = [a.split() for a in file_content]
@@ -16,6 +17,7 @@ class GjfFile:
 	@functools.lru_cache(maxsize=1)
 	def name(self):
 		if len(self.list[0]) == 0: raise Exception(".gjf or .com object has no name")
+		assert type(self.list[0]) is str, "Name must be string"
 		return self.list[0]
 	@functools.lru_cache(maxsize=1)
 	def charge(self):
@@ -47,16 +49,15 @@ class GjfFile:
 			line = line.lower().replace(" ","")
 			if "%nprocshared=" in line:	return int(line.replace("%nprocshared=",""))
 			elif "%nproc=" in line:	return int(line.replace("%nproc=",""))
-		return None
 	@functools.lru_cache(maxsize=1)
 	def cord_block(self):
-		cordinates = []
+		coordinates = []
 		for line in self.list_l[self.c_m_idx()+1:]:
 			if len(line) == 0: break
 			if len(line) != 4: continue
-			if line[0] in elements:	cordinates.append(line)
-			else: cordinates.append([elements[int(line[0])],*line[0:]])
-		return cordinates
+			if line[0] in elements:	coordinates.append(line)
+			else: coordinates.append([elements[int(line[0])],*line[0:]])
+		return coordinates
 
 	@functools.lru_cache(maxsize=1)
 	def route_text(self):
@@ -103,8 +104,14 @@ class GjfFile:
 		miss_basis = [a for a in self.elements() if a not in self.declared_basis()]
 		surpl_basis = [a for a in self.declared_basis() if a not in self.elements()]
 		rep_basis = list(dict.fromkeys([a for a in self.declared_basis() if self.declared_basis().count(a) > 1]))
-		#statements
 		errors = []
+		for i in [*[a+1 for a in self.declared_basis_lines()],self.route_idx()]:
+			if GjfFile.pattern.search(self.list[i]):
+				errors.append("Is the basis set specifications correct?".format(i))
+				errors.append("{}".format(self.list[i]))
+				errors.append("Shouldn't '+' appear before the letter 'G'?")
+		i
+		#statements
 		if not zero_last:errors.append("Missing zero at the end of basis set specification?")
 		if miss_basis:errors.append("Missing basis for: {} ?".format(" ".join(miss_basis)))
 		if surpl_basis:errors.append("Surplous basis for: {} ?".format(" ".join(surpl_basis)))
