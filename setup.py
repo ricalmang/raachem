@@ -5,14 +5,13 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="raachem",
-    version="0.0.3",
+    version="0.0.4",
     author="Ricardo Almir Angnes",
     author_email="ricardo_almir@hotmail.com",
     description="Tools I use for computational chemistry",
     long_description=long_description,
 	license="MIT",
     url="https://github.com/ricalmang/raachem",
-	download_url = 'https://github.com/ricalmang/raachem/archive/v0.0.3.tar.gz',
 	keywords = ['chemistry'],
 	install_requires = ["numpy"],
     packages=setuptools.find_packages(),
