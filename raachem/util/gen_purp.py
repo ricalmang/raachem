@@ -147,15 +147,8 @@ class Var:
 				break
 			self.write_save()
 	def write_save(self,conf_file=conf_file):
-		with open(conf_file, mode="r") as file: options = file.readlines()
-		output = []
-		for line in options:
-			for a in vars(self):
-				if line.startswith(a):
-					line = "{} = {}".format(a,getattr(self,a))
-			output.append(line)
-		with open(conf_file, mode="w", newline="\n") as file:
-			file.write("\n".join(output))
+		output = "\n".join(["{} = {}".format(a,getattr(self,a,)) for a in vars(self)])
+		with open(conf_file, mode="w", newline="\n") as file: file.write(output)
 		global preferences
 		preferences = Var()
 preferences = Var()
