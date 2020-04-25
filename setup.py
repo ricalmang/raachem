@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="raachem",
-    version="0.0.4",
+    version="0.0.5",
     author="Ricardo Almir Angnes",
     author_email="ricardo_almir@hotmail.com",
     description="Tools I use for computational chemistry",
