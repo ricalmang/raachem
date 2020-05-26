@@ -37,7 +37,7 @@ def log_to_xyz(weeded_list):
 			if geom == "1":	LogFile(read_item(i)).last_xyz_obj().save_file()
 			elif geom == "3": LogFile(read_item(i)).first_xyz_obj().save_file()
 			elif geom == "2": LogFile(read_item(i)).low_e_xyz_obj().save_file()
-		except AttributeError as e:
+		except Exception as e:
 			print("Error on file: {}".format(i))
 			print(e)
 
