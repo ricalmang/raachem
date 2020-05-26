@@ -4,6 +4,7 @@ from raachem.util.gen_purp import is_str_float
 import functools
 
 class LogFile:
+	calc_types = ["TS","Red","IRC","Opt","SP"]
 	def __init__(self,file_content):
 		self.list = file_content
 		self.lenght = len(self.list)
@@ -103,9 +104,14 @@ class LogFile:
 		x = None if self.start_displ_block is None else min(a for a in self.empty_line_idxs if a > self.start_displ_block)
 		self.end_displ_block = x
 		self.displ_block = None if self.end_displ_block is None else self.list[self.start_displ_block:self.end_displ_block]
-		x = None if self.hash_line_idxs is None else min(a for a in self.multi_dash_idxs if a > self.hash_line_idxs[0])
-		x = None if self.hash_line_idxs is None else "".join([a.lstrip() for a in self.list[self.hash_line_idxs[0]:x]])
-		self.raw_route = x
+		try:
+			x = None if self.hash_line_idxs is None else min(a for a in self.multi_dash_idxs if a > self.hash_line_idxs[0])
+			x = None if self.hash_line_idxs is None else "".join([a.lstrip() for a in self.list[self.hash_line_idxs[0]:x]])
+			self.raw_route = x
+		except IndexError as e:
+			print("Error while finding route section of log file")
+			print(e)
+			print(self.name)
 		try:
 			self.oc_orb_energies = [float(b) for b in self.oc_orb_energies]
 			self.uno_orb_energies = [float(a) for a in self.uno_orb_energies]
@@ -139,7 +145,7 @@ class LogFile:
 				self.init_errors.append("Lumo is lower than homo?")
 		if self.init_errors:
 			for a in self.init_errors: print(a)
-			print("Errors above were found on file\n {}".format(self.name))
+			print("Errors above were found on file\n{}".format(self.name))
 		#self.loghelp()
 		#print(self.raw_route)
 		#print(self.first_xyz_obj())
@@ -195,6 +201,13 @@ class LogFile:
 	@functools.lru_cache(maxsize=1)
 	def first_xyz_obj(self):
 		return XyzFile([self.name,self.n_atoms," ",*(" ".join(l) for l in self.first_cord_block())])
+	@functools.lru_cache(maxsize=1)
+	def low_e_xyz_obj(self):
+		if self.calc_type == "SP": return None
+		else:
+			xyzs = {"TS":self.opt,"Red":self.scan_geoms,"IRC":self.irc,"Opt":self.opt}[self.calc_type]()
+			if len(xyzs) == 0: return None
+			else: return sorted(xyzs,key= lambda x: float(x.title()) if is_str_float(x.title()) else 1)[0]
 	@functools.lru_cache(maxsize=1)
 	def frequencies(self):
 		if self.displ_block is None: return False

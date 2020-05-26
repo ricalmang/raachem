@@ -16,10 +16,10 @@ def e_analysis(weeded_list):
 		try: last_SCF = log.scf_done[-1][-1]
 		except: last_SCF = "None"
 		if t == False: out.append("{:<30} no_thermo_data_found_Last_SCF: {:>20}".format(i, last_SCF)); continue
-		out.append("{:<30}{:>20}{:>20}{:>20}".format(i, t[7], t[3], last_SCF))
+		out.append("{:<30}{:>20}{:>20}{:>20}".format(str(i), str(t[7]), str(t[3]), str(last_SCF)))
 		rel_e.append([i, float(t[7]) * 627.5095, float(last_SCF) * 627.5095, float(t[3]) * 627.5095])
 	if len(rel_e) > 1:
-		print("Do you want the free energyes to be reported relative to which item?")
+		print("Do you want the free energies to be reported relative to which item?")
 		print("Enter 0 if you don't want to analyze them)")
 		for idx, entry in enumerate(rel_e):
 			print(" {:<4}{:<20}{:>25}".format(idx + 1, entry[0], round(entry[1], 2)))
@@ -36,7 +36,6 @@ def e_analysis(weeded_list):
 			out.append("\n")
 	with open(file_name,mode="w",newline="\n") as file: file.write("\n".join(out))
 	print("\nDone! \nPlease lookup:\n\n" + os.path.join(os.getcwd(), file_name), "\n")
-
 
 def rel_scf(list=False):
 	energies = []

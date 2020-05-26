@@ -21,13 +21,26 @@ def input_to_xyz():
 		elif preferences.comp_software == "gaussian":
 			xyz = GjfFile(read_item(i)).xyz_obj()
 			xyz.save_file()
-def log_to_xyz(weeded_list,geom="Last"):
-	if geom == "Last":
-		for i in weeded_list:
-			LogFile(read_item(i)).last_xyz_obj().save_file()
-	elif geom == "First":
-		for i in weeded_list:
-			LogFile(read_item(i)).first_xyz_obj().save_file()
+def log_to_xyz(weeded_list):
+	while True:
+		print("Which geometry do you want?")
+		print("0 - Cancel")
+		print("1 - Last")
+		print("2 - Lowest energy")
+		print("3 - First")
+		geom = input()
+		if geom in ["0","1","2","3"]: break
+		else: print("Invalid option!")
+	if geom == "0": return
+	for i in weeded_list:
+		try:
+			if geom == "1":	LogFile(read_item(i)).last_xyz_obj().save_file()
+			elif geom == "3": LogFile(read_item(i)).first_xyz_obj().save_file()
+			elif geom == "2": LogFile(read_item(i)).low_e_xyz_obj().save_file()
+		except AttributeError as e:
+			print("Error on file: {}".format(i))
+			print(e)
+
 def log_to_xyz_scan(weeded_list):
 	print("\nWhich file(s) do you want to analyse? (Separate multiple entries by space | Enter 0 to give up)\n")
 	for idx,file in enumerate(weeded_list):
@@ -51,7 +64,7 @@ def log_to_xyz_scan(weeded_list):
 			print("{:5}{:^90}{:>8}".format("Entry"," >---> Relative Energy >---> "," kcal"))
 			for entry in [float(i.title()) for i in xyzs]:
 				c[0]=c[0]+1
-				c[1]= "|"*int(90*((float(entry)-min_e)/(max_e-min_e)))
+				c[1]= "|"*int(90*((float(entry)-min_e)/(max_e-min_e)) if max_e != min_e else 0)
 				c[2]= (float(entry)-min_e)*627.5
 				print("{:<5}{:<90}".format(c[0],c[1]),"{:>6.5f}".format(c[2]) if ext_name == "_opt_traject.xyz" else "{:>6.2f}".format(c[2]))
 			file_name = weeded_list[item].replace(".log",ext_name)
