@@ -6,15 +6,12 @@ from raachem.file_class.inp import InpFile
 from raachem.file_class.gjf import GjfFile
 
 def xyz_ent():
-	weeded_list = file_weeder([".xyz"])
-	for i in weeded_list:
+	for i in file_weeder([".xyz"]):
 		xyz = XyzFile(read_item(i)).enantiomer()
 		xyz.save_file()
-
 def input_to_xyz():
 	extension = preferences.gauss_ext if preferences.comp_software == "gaussian" else ".inp"
-	weeded_list = file_weeder([extension])
-	for i in weeded_list:
+	for i in file_weeder([extension]):
 		if preferences.comp_software == "orca":
 			xyz = InpFile(read_item(i)).xyz_obj()
 			xyz.save_file()
@@ -29,14 +26,14 @@ def log_to_xyz(weeded_list):
 		print("2 - Lowest energy")
 		print("3 - First")
 		geom = input()
-		if geom in ["0","1","2","3"]: break
+		if geom == "0": return
+		if geom in ["1","2","3"]: break
 		else: print("Invalid option!")
-	if geom == "0": return
 	for i in weeded_list:
 		try:
 			if geom == "1":	LogFile(read_item(i)).last_xyz_obj().save_file()
-			elif geom == "3": LogFile(read_item(i)).first_xyz_obj().save_file()
 			elif geom == "2": LogFile(read_item(i)).low_e_xyz_obj().save_file()
+			elif geom == "3": LogFile(read_item(i)).first_xyz_obj().save_file()
 		except Exception as e:
 			print("Error on file: {}".format(i))
 			print(e)
@@ -228,10 +225,9 @@ def geodes_int():
 			print("2 - Icosahedron gobling")
 			print("3 - Give a fulerene")
 			usr_opt = input()
-			if usr_opt in [str(a) for a in range(4)]: break
-		if usr_opt == "0":
-			return
-		elif usr_opt == "1":
+			if usr_opt == "0": return
+			if usr_opt in ["1","2","3"]: break
+		if usr_opt == "1":
 			geodes = [[a,b,c] for a in [-1,1] for b in [-1,1] for c in [-1,1]]
 		elif usr_opt == "2":
 			k = (1 + math.sqrt(5)) / 2

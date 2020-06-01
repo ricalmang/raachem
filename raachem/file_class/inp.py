@@ -96,7 +96,8 @@ class InpFile:
 			mult = None
 			print("Did you properly provide charge and multiplicity data?")
 			print("Line {}:\n'{}'".format(self.c_m_idx()+1,self.list[self.c_m_idx()]))
-		return [charge,mult]
+		finally:
+			return [charge,mult]
 	@functools.lru_cache(maxsize=1)
 	def block_keys(self,possible_blocks=possible_blocks):
 		d = {}

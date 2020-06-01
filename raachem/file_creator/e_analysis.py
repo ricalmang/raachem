@@ -72,10 +72,22 @@ def csv_e_analysis():
 					a,
 					os.path.dirname(a),
 					log.error_msg]
-			csv_list.append(line)
+
 			if i+1 < last: print("\rEvaluating... {}/{}".format(i+1,last),end="")
 			else: print("\rEvaluation done ({}/{}), saving '.csv' file...".format(i+1,last))
-		except Exception as e: print("\nError on file:\n{}\n".format(a));print(e,"\n")
+		except Exception as e:
+			print("\nError on file:\n{}\n".format(a));print(e,"\n")
+			line = ["-",
+					"-",
+					"-",
+					"-",
+					"-",
+					"-",
+					a,
+					os.path.dirname(a),
+					"-"]
+		finally:
+			csv_list.append(line)
 	if not csv_list: return print("No .log files in {} directory".format(os.getcwd()))
 	csv_list.sort(key=lambda x: x[0], reverse=True)
 	csv_code = ["Free energy, +A, +B, +C, +D, -E, -F, Complex, Rel_E,-Freq ," +
@@ -98,10 +110,9 @@ def csv_e_analysis():
 		csv_code.append(",".join(row))
 	try:
 		with open("linked_analysis.csv", mode="w",newline="\n") as file: file.write("\n".join(csv_code))
+		print("Done, please lookup:\n{}".format(os.path.join(os.getcwd(), "linked_analysis.csv")))
 	except PermissionError:
 		print("Error while saving file!\nIs the file '{}' already open?".format("linked_analysis.csv"))
-		return
-	print("Done, please lookup:\n{}".format(os.path.join(os.getcwd(), "linked_analysis.csv")))
 
 def deduplicate():
 	print("Analyzing energies...")
