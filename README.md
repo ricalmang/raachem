@@ -1,3 +1,5 @@
+[![PyPI version](https://badge.fury.io/py/raachem.svg)](https://badge.fury.io/py/raachem)
+
 # Description
 Helpfull scripts for doing computational chemistry
 
