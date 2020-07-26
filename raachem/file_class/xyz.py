@@ -150,6 +150,10 @@ class XyzFile:
 		last_error = None
 		xyz_1 = [[float(a) for a in b] for b in other.std_cord(num_atoms).cord_strip()]
 		xyz_2 = [[float(a) for a in b] for b in self.std_cord(num_atoms).cord_strip()]
+		for a,b,c in zip(range(len(self.all_elements()) if num_atoms == 0 else num_atoms),other.all_elements(),self.all_elements()):
+			if b != c:
+				atom_number = 'th' if 11<=a+1<=13 else {1:'st',2:'nd',3:'rd'}.get((a+1)%10, 'th')
+				print("WARNING: {}{} atom pair doesn't not correspond to an element match: {} & {}".format(a+1,atom_number,b,c))
 		if print_step: print("======ACTIONS======")
 		for num in range(conv):
 			step_size = 1 / 2 ** num

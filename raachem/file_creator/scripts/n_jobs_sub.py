@@ -18,7 +18,7 @@ all_files = file_weeder([".pbs"])
 print("The following files will compose the script")
 for idx,i in enumerate(all_files):
 	if idx == 0:
-		counter , a = 0, [] 
+		counter, a = 0, []
 	counter += 1
 	a.append(i)
 	if counter == 3 or idx + 1 == len(all_files):

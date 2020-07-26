@@ -58,7 +58,6 @@ class GjfFile:
 			if line[0] in elements:	coordinates.append(line)
 			else: coordinates.append([elements[int(line[0])],*line[0:]])
 		return coordinates
-
 	@functools.lru_cache(maxsize=1)
 	def route_text(self):
 		return " ".join(self.list[self.route_idx():self.title_idx()])
@@ -110,7 +109,6 @@ class GjfFile:
 				errors.append("Is the basis set specifications correct?".format(i))
 				errors.append("{}".format(self.list[i]))
 				errors.append("Shouldn't '+' appear before the letter 'G'?")
-		i
 		#statements
 		if not zero_last:errors.append("Missing zero at the end of basis set specification?")
 		if miss_basis:errors.append("Missing basis for: {} ?".format(" ".join(miss_basis)))
@@ -155,10 +153,8 @@ class GjfFile:
 	def mem(self):
 		for line in self.list:
 			line = line.lower().replace(" ","")
-			if "%mem=" in line:
-				line = line.replace("%mem=","")
-				if "mb" in line: return int(line.replace("mb",""))
-				elif "gb" in line: return 1000*int(line.replace("gb",""))
+			if line.startswith("%mem=") and line.endswith("mb"): return int(line[5:-2])
+			elif line.startswith("%mem=") and line.endswith("gb"): return 1000*int(line[5:-2])
 		return None
 	#########################
 	#########################

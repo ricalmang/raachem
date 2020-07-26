@@ -40,8 +40,8 @@ def log_to_xyz(weeded_list):
 
 def log_to_xyz_scan(weeded_list):
 	print("\nWhich file(s) do you want to analyse? (Separate multiple entries by space | Enter 0 to give up)\n")
-	for idx,file in enumerate(weeded_list):
-		print("{:<5}{:<40}".format(idx+1,file))
+	for idx,file in enumerate(weeded_list,start=1):
+		print("{:<5}{:<40}".format(idx,file))
 	while True:
 		option=input().split()
 		if all(True if a in [str(b) for b in range(len(weeded_list)+1)] else False for a in option):
@@ -77,10 +77,10 @@ def log_freq_xyz(weeded_list):
 		while True:
 			print("Analizing file: {}".format(i))
 			print("Chose a frequency to split (0-To cancel/m-For more)")
-			for idx,item in enumerate(log.frequencies()):
-				print("{:>5}:{:>15}".format(idx+1,item))
+			for idx,item in enumerate(log.frequencies(),start=1):
+				print("{:>5}:{:>15}".format(idx,item))
 				if option == "m": continue
-				if idx > 3: break
+				if idx > 2: break
 			option=input()
 			if option == "m": continue
 			elif option in [str(a+1) for a in range(len(log.frequencies()))]: break

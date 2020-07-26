@@ -120,8 +120,8 @@ class InpFile:
 		for line in self.list[self.end_cord_idx():]: new.append(line)
 		return InpFile(new)
 	def _hunt_end(self,start):
-		for idx,line in enumerate(self.list[start:]):
-			if "end" in line.lower().split(): return idx + start
+		for idx,line in enumerate(self.list[start:],start=start):
+			if "end" in line.lower().split(): return idx
 		return None
 	def xyz_obj(self):
 		return XyzFile([self.name(),self.n_atoms()," ",*[" ".join(a) for a in self.cord_block()]])
