@@ -13,7 +13,7 @@ setuptools.setup(
 	license="MIT",
     url="https://github.com/ricalmang/raachem",
 	keywords = ['chemistry'],
-	install_requires = ["numpy"],
+	install_requires = ["numpy","xlwt"],
     packages=setuptools.find_packages(),
 	package_data = {"":["*.GAUSSIAN","*.ORCA","*.gbs"]},
     classifiers=[

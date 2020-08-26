@@ -1,6 +1,7 @@
 import os, shutil
 from raachem.file_class.log import LogFile
-from raachem.util.gen_purp import file_weeder, read_item, preferences, timeit
+from raachem.file_class.gjf import GjfFile
+from raachem.util.gen_purp import file_weeder, read_item, preferences, timeit, is_str_float
 
 
 def e_analysis(weeded_list):
@@ -51,68 +52,98 @@ def rel_scf(list=False):
 	elif list == True: return energies
 @timeit
 def csv_e_analysis():
-	def evaluate_list(folder, logs=[]):
+	options = ["Free energy","+A", "+B", "+C", "+D", "-E", "-F", "Structure", "Rel_E", \
+				"FOLD", "Filename", "XYZ", "INP", "LOG", "TYP", "iFreq", "Needs refinement?", "Done?",\
+				"last_SCF", "Hentalphy", "Log Route","Inp Route", "Error msg"]
+	def idx(name):
+		return options.index(name)
+	def evaluate_list(folder, files=set()):
 		for file in os.listdir(folder):
-			if os.path.isdir(os.path.join(folder, file)): evaluate_list(os.path.join(folder, file), logs)
-			elif file.endswith(".log"): logs.append(os.path.join(folder, file))
-		return logs
-	csv_list = []
-	files = evaluate_list(os.getcwd())
-	last = len(files)
-	for i,a in enumerate(files):
+			if os.path.isdir(os.path.join(folder, file)):
+				evaluate_list(os.path.join(folder, file), files)
+			elif any([file.endswith(".log"),file.endswith(".xyz"),file.endswith(preferences.gauss_ext)]):
+				files.add(os.path.join(folder, os.path.splitext(file)[0]))
+		return files
+	def evaluate_file(a, options,i,last):
 		try:
-			log = LogFile(read_item(os.path.relpath(a, os.getcwd())))
-			# line = ["Termination","Free energy","Enthalphy","last_SCF","negativeFreq","TYP","File","Folder"]
-			line = ["Yes" if log.normal_termin else "No",
-					str(log.thermal[7]) if log.frequencies() else "No data",
-					str(log.thermal[6]) if log.frequencies() else "No data",
-					str(log.scf_done[-1][-1]) if log.normal_termin else "No data",
-					str(len([a for a in log.frequencies() if float(a) < 0])) if log.frequencies() else "No data",
-					log.calc_type,
-					a,
-					os.path.dirname(a),
-					log.error_msg]
+			row = ["None" for _ in options]
+			#FILE PROPERTIES
+			row[idx("Filename")] = os.path.basename(a)
 
-			if i+1 < last: print("\rEvaluating... {}/{}".format(i+1,last),end="")
-			else: print("\rEvaluation done ({}/{}), saving '.csv' file...".format(i+1,last))
+			#FOLDER PROPERTIES
+			fold_name = os.path.dirname(a)
+			row[idx("FOLD")] = 'HYPERLINK("{}";"{}")'.format(fold_name,os.path.relpath(fold_name, os.getcwd()))
+
+			#INPUT PROPERTIES
+			inp_name = a + preferences.gauss_ext
+			is_inp = os.path.isfile(os.path.relpath(inp_name, os.getcwd()))
+			inp = GjfFile(read_item(os.path.relpath(inp_name, os.getcwd()))) if is_inp else False
+			row[idx("INP")] = 'HYPERLINK("{}";"Link")'.format(inp_name) if is_inp else "-"
+			row[idx("Inp Route")] = inp.route_text() if inp else "No data"
+
+			#XYZ PROPERTIES
+			xyz_name = a + ".xyz"
+			is_xyz = os.path.isfile(os.path.relpath(xyz_name, os.getcwd()))
+			row[idx("XYZ")] = 'HYPERLINK("{}";"Link")'.format(xyz_name) if is_xyz else "-"
+
+			#LOG PROPERTIES
+			log_name = a + ".log"
+			is_log = os.path.isfile(os.path.relpath(log_name, os.getcwd()))
+			log = LogFile(read_item(os.path.relpath(log_name, os.getcwd()))) if is_log else False
+			row[idx("Free energy")] = str(log.thermal[7]) if log and log.frequencies() else "No data"
+			row[idx("+A")] = "-"
+			row[idx("+B")] = "-"
+			row[idx("+C")] = "-"
+			row[idx("+D")] = "-"
+			row[idx("-E")] = "-"
+			row[idx("-F")] = "-"
+			row[idx("Structure")] = "-"
+			row[idx("Rel_E")] = "(SUM($A#:$E#)-SUM($F#:$G#)-SUM($A#:$E#)+SUM($F#:$G#))*627.509474"
+			row[idx("iFreq")] = log.n_ifreq() if log else "-"
+			row[idx("TYP")] = log.calc_type if log else "-"
+			row[idx("LOG")] = 'HYPERLINK("{}";"Link")'.format(log_name) if log else "-"
+			row[idx("Done?")] = "Yes" if log and log.normal_termin else "No"
+			row[idx("last_SCF")] = str(log.scf_done[-1][-1]) if log and log.normal_termin else "-"
+			row[idx("Hentalphy")] = str(log.thermal[6]) if log and log.frequencies() else "-"
+			row[idx("Error msg")] = log.error_msg if log else "-"
+			row[idx("Needs refinement?")] = log.needs_ref() if log else "-"
+			row[idx("Log Route")] = log.raw_route if log else "-"
 		except Exception as e:
-			print("\nError on file:\n{}\n".format(a));print(e,"\n")
-			line = ["-",
-					"-",
-					"-",
-					"-",
-					"-",
-					"-",
-					a,
-					os.path.dirname(a),
-					"-"]
+			print()
+			print("\nError on file:\n{}\n".format(a));
+			print(e, "\n")
 		finally:
-			csv_list.append(line)
+			if i+1 < last: print("\rEvaluating... {}/{}".format(i+1,last),end=" ")
+			else: print("\rEvaluation done ({}/{}), saving '.xls' file...".format(i+1,last))
+			return row
+	files = evaluate_list(os.getcwd())
+	csv_list = [evaluate_file(file,options,i,len(files)) for i,file in enumerate(files)]
 	if not csv_list: return print("No .log files in {} directory".format(os.getcwd()))
-	csv_list.sort(key=lambda x: x[0], reverse=True)
-	csv_code = ["Free energy, +A, +B, +C, +D, -E, -F, Complex, Rel_E,-Freq ," +
-				"TYP , Filename , INP , LOG , FOLD , Folder name, Done?, last_SCF, Hentalphy,Error msg"]
-	for idx,line in enumerate(csv_list):
-		row = [line[1],
-			*["-" for _ in range(7)],
-			"=(SUM($A{0}:$E{0})-SUM($F{0}:$G{0})-SUM($A${0}:$E${0})+SUM($F${0}:$G${0}))*627.509474".format(idx+2),
-			line[4],
-			line[5],
-			os.path.basename(line[6]),
-			'=HYPERLINK("{}";"Link")'.format(line[6]).replace(".log", preferences.gauss_ext) if os.path.isfile(line[6].replace(".log", preferences.gauss_ext)) else "-",
-			'=HYPERLINK("{}";"Link")'.format(line[6]),
-			'=HYPERLINK("{}";"Link")'.format(line[7]),
-			os.path.relpath(line[7], os.getcwd()),
-			line[0],
-			line[3],
-			line[2],
-			line[8]]
-		csv_code.append(",".join(row))
+	csv_list.sort(key=lambda x: x[idx("FOLD")])
 	try:
-		with open("linked_analysis.csv", mode="w",newline="\n") as file: file.write("\n".join(csv_code))
-		print("Done, please lookup:\n{}".format(os.path.join(os.getcwd(), "linked_analysis.csv")))
+		import xlwt
+		from xlwt import Workbook
+	except ImportError:
+		print("xlwt module is needed")
+		return
+	wb = Workbook()
+	sheet1 = wb.add_sheet('Data')
+	style0 = xlwt.easyxf("", "#.0000000")
+	for i_b,b in enumerate(options):
+		sheet1.write(0, i_b, b)
+	for i_a,a in enumerate(csv_list,start=1):
+		a[idx("Rel_E")] = a[idx("Rel_E")].replace("#",str(i_a+1))
+		for i_b,b in enumerate(a):
+			if i_b in [idx(term) for term in ("Free energy", "last_SCF", "Hentalphy")]:
+				sheet1.write(i_a, i_b, float(b) if is_str_float(b) else b,style0)
+			elif i_b in [idx(term) for term in ("FOLD","XYZ","INP","LOG","Rel_E")]:
+				try: sheet1.write(i_a, i_b, xlwt.Formula(b))
+				except Exception: sheet1.write(i_a, i_b, b)
+			else: sheet1.write(i_a, i_b, b)
+	try:
+		wb.save("linked_analysis.xls")
 	except PermissionError:
-		print("Error while saving file!\nIs the file '{}' already open?".format("linked_analysis.csv"))
+		print("Error while saving file!\nIs the file '{}' already open?".format("linked_analysis.xls"))
 
 def deduplicate():
 	print("Analyzing energies...")

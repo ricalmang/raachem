@@ -1,4 +1,5 @@
-import os, shutil, time
+import os, shutil, time, itertools
+
 
 def read_item(file_name=None, promp=False, extension=None, cf=os.getcwd()):
 	"""Reads an .xyz, .gjf, .com or .log item and returns a list of its contents ready for class instantiation"""
@@ -16,12 +17,10 @@ def read_item(file_name=None, promp=False, extension=None, cf=os.getcwd()):
 	return in_content
 def file_weeder(ext_to_weed,cf=os.getcwd(), promp=True):
 	"""Looks up files with the extensions provided in current directory"""
-	fulllist=os.listdir(cf)
-	weeded_list=[]
 	if type(ext_to_weed) == str: ext_to_weed = [ext_to_weed]
-	for extension in ext_to_weed:
-		matching = [s for s in fulllist if extension in s]
-		for match in matching: weeded_list.append(match)
+	weeded_list = []
+	for a,b in itertools.product(ext_to_weed,os.listdir(cf)):
+		if a in b: weeded_list.append(b)
 	if promp and len(weeded_list) == 0:
 		print("No '{}' files found in current directory!".format("' or '".join(ext_to_weed)))
 		print(cf)

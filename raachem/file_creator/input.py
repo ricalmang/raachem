@@ -159,6 +159,14 @@ class CreateInputs:
 							elif all([line.split()[0] == "B", line.split()[3] == "S",line.split()[-1] == "DIST"]):
 								gjf_out.append(line.replace("DIST",str(1+int(ideal_dist/0.075))+" 0.075\n"))
 								continue
+					# READOPTIMIZE + NOTATOMS
+					elif line.replace(" ", "").lower() == "notatoms=":
+						print("Please enter the atoms you want to freeze on structure {} separated by comma".format(xyz.name()))
+						line = line + input(line)
+					# READOPTIMIZE + ATOMS
+					elif line.replace(" ", "").lower() == "noatomsatoms=":
+						print("Please enter the atoms you want to optimize on structure {} separated by comma".format(xyz.name()))
+						line = line + input(line)
 					# BASIS like: "LIGHT_ELEMENT_BASIS 0" or "HEAVY_ELEMENT_BASIS 0" and ECP like "HEAVY_ELEMENT_ECP 0"
 					elif len(line.split()) == 2:
 						if any(True for a in ["/gen","gen ","genecp"] if a in " ".join(parameters[0:index-3]).lower()):

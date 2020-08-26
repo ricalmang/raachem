@@ -1,7 +1,7 @@
 from raachem.file_class.xyz import XyzFile
 from raachem.util.constants import elements
 from raachem.util.gen_purp import is_str_float
-import functools
+import functools, itertools
 
 class LogFile:
 	calc_types = ["TS","Red","IRC","Opt","SP"]
@@ -107,7 +107,7 @@ class LogFile:
 		try:
 			x = None if self.hash_line_idxs is None else min(a for a in self.multi_dash_idxs if a > self.hash_line_idxs[0])
 			x = None if self.hash_line_idxs is None else "".join([a.lstrip() for a in self.list[self.hash_line_idxs[0]:x]])
-			self.raw_route = x
+			self.raw_route = " ".join(x.split())
 		except IndexError as e:
 			print("Error while finding route section of log file")
 			print(e)
@@ -162,7 +162,7 @@ class LogFile:
 	def last_cord_block(self):
 		if not all([self.xyz_cord_block, self.end_xyz_idxs]):
 			if self.resumes:
-				print("WARNING: Coordinates will be drawn from the last job abstract:")
+				print("WARNING: Coordinates will be taken from the last job abstract:")
 				print("lines {} - {} of file:".format(self.start_resume_idxs[-1],self.end_resume_idxs[-1]))
 				print("{}".format(self.name))
 				return LogAbstract(self.resumes[0]).xyz_object().cord_block()
@@ -211,13 +211,13 @@ class LogFile:
 	@functools.lru_cache(maxsize=1)
 	def frequencies(self):
 		if self.displ_block is None: return False
-		else: return [j for a in [i.split()[2:] for i in self.displ_block[2::self.n_atoms+7]] for j in a]
+		else: return list(itertools.chain(*[i.split()[2:] for i in self.displ_block[2::self.n_atoms+7]]))
 	@functools.lru_cache(maxsize=1)
 	def displ_for_freq_idx(self,freq_idx):
 		if self.displ_block is None: return []
 		displ = []
 		for num in range(self.n_atoms):
-			displ.append([j for a in [i.split()[2:] for i in self.displ_block[7+num::self.n_atoms+7]] for j in a])
+			displ.append(list(itertools.chain(*[i.split()[2:] for i in self.displ_block[7+num::self.n_atoms+7]])))
 		displ_for_freq_str = [a[freq_idx*3:freq_idx*3+3] for a in displ]
 		displ_for_freq_float = [[float(i) for i in b] for b in displ_for_freq_str]
 		return displ_for_freq_float
@@ -226,7 +226,7 @@ class LogFile:
 		if self.raw_route:
 			r_sect = [self.raw_route]
 			for x in [None, "/", "(", ")", ",", "=", "%", ":"]:
-				r_sect = [a for b in [i.split(x) for i in r_sect] for a in b if len(a) > 1]
+				r_sect = [a for a in itertools.chain(*[i.split(x) for i in r_sect]) if len(a) > 1]
 			r_sect = [a.lower() for a in r_sect]
 			if "ts" in r_sect: return "TS"
 			elif any(True for a in r_sect if a in ("modredundant", "readoptimize", "readfreeze")): return "Red"
@@ -264,11 +264,15 @@ class LogFile:
 	def scan_geoms(self):
 		if not all([self.start_xyz_idxs, self.end_xyz_idxs, self.scan_points, self.scf_done]): return []
 		geoms = []
-		points = self.scan_points
-		start_idx = [min(i for i in self.start_xyz_idxs if i > b[0]) for b in points]
+		all_points = self.scan_points
+		points = [a for a in all_points if a[0] < self.start_xyz_idxs[-1] and a[0] < self.end_xyz_idxs[-1]]
+		points_removed = len(all_points) - len(points)
+		if points_removed != 0:
+			print(f"WARNING: {points_removed} Scan  points have been removed due to inconsistent number o geometries found")
+		start_idx = [min(i for i in self.start_xyz_idxs if i > b[0])  for b in points]
 		end_idx = [min(i for i in self.end_xyz_idxs if i > b[0]) for b in points]
 		scf_idx = [max(i for i in self.scf_done if i[0] < b[0]) for b in points]
-		for i,(a,b,c,d) in enumerate(zip(start_idx,end_idx,scf_idx,self.scan_points)):
+		for i,(a,b,c,d) in enumerate(zip(start_idx,end_idx,scf_idx,points)):
 			name = self.name.replace(".log","_" + str(i+1)+".xyz")
 			if d[1] == "Optimized": print("Optimized geometry found at line {}!".format(d[0]))
 			elif d[1] == "Non-Optimized": print("Non-Optimized1 geometry found at line {}!".format(d[0]))
@@ -276,7 +280,18 @@ class LogFile:
 		if len(geoms) == 0:
 			print("No Optimized geometries found for {} file".format(self.name()))
 		return geoms
-
+	@functools.lru_cache(maxsize=1)
+	def n_ifreq(self):
+		return str(len([b for b in self.frequencies() if float(b) < 0])) if self.frequencies() else "No data"
+	@functools.lru_cache(maxsize=1)
+	def needs_ref(self):
+		if self.calc_type == "Opt":
+			if self.n_ifreq() == "0": return "No"
+			else: return "Yes"
+		elif self.calc_type == "TS":
+			if self.n_ifreq() == "1": return "No"
+			else: return "Yes"
+		else: return "-"
 	n_atoms = property(_n_atoms)
 	normal_termin = property(_normal_termin)
 	calc_type = property(_calc_type)

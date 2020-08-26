@@ -6,7 +6,6 @@ from raachem.util.gen_purp import is_str_float
 class XyzFile:
 	def __init__(self,file_content):
 		self.list = file_content
-
 		if len(self.list) < 2: raise Exception(".xyz Object is empty?")
 		elif not (str(self.list[1]).strip().isdigit() and len(str(self.list[1]).split()) == 1):
 			print("{} is not a proper .xyz file\nAttempting to read it anyway!".format(self.list[0]))
@@ -113,6 +112,7 @@ class XyzFile:
 		return XyzFile([self.name(),self.n_atoms(),self.title(),*cord_block])
 	def rotate(self, angle, axis):
 		"takes xyz object and returns xyz object rotated by angle over axis"
+		assert axis in ("x", "y", "z"), "Only 'x','y' or 'z' axis are suported"
 		if axis == "x":
 			m_mat = [[1., 0., 0.], [0., math.cos(angle), -math.sin(angle)], [0., math.sin(angle), math.cos(angle)]]
 		if axis == "y":
@@ -130,6 +130,7 @@ class XyzFile:
 		"""Takes xyz object and returns xyz object rotated by angle over axis.
 		Returns either the max_distance 'max_d' or final geometry 'geom' after rotations and superpositions"""
 		def rotate(xyz,angle,axis):
+			assert axis in ("x","y","z"), "Only 'x','y' or 'z' axis are suported"
 			if axis == "x":
 				m_mat = [[1., 0., 0.], [0., math.cos(angle), -math.sin(angle)], [0., math.sin(angle), math.cos(angle)]]
 			if axis == "y":
@@ -198,78 +199,102 @@ class XyzFile:
 		xyz = [" ".join([*a[0:-1],str(-float(a[-1]))]) for a in self.cord_block()]
 		xyz_mat = [os.path.splitext(self.name())[0]+"_ent.xyz", self.n_atoms(), " ", *xyz]
 		return XyzFile(xyz_mat)
-	@functools.lru_cache(maxsize=1)
-	def connectivity(self):
-		atoms = self.all_elements()
-		rad = [dict(element_radii)[a]*0.01 for a in atoms]
-		xyz = [[float(b) for b in a] for a in self.cord_strip()]
-		def dist(a, b): return sum((d - c) ** 2 for c, d in zip(a, b)) ** (0.5)
-		con = [[i for i,b in enumerate(xyz) if dist(a,b)<1.2*(rad[y]+rad[i]) and i!=y] for y,a in enumerate(xyz)]
-		return [a for a in zip(atoms,con)]
+	molecule = property(lambda self: Molecule(self.cord_block()))
 
-	#TODO
-	@functools.lru_cache(maxsize=1)
-	def angles(self):
-		aa = self.cord_strip()
-		a = [[[i,aa[i]],[[n,aa[n]] for n in a[1]]] for i,a in enumerate(self.connectivity()) if len(a[1]) > 1]
-		for n in a:
-			b_a = np.array([float(i) for i in n[0][-1]])
-			#print(n[0][-1])
-			for n1 in n[1]:
-				a_a = np.array([float(i) for i in n1[1]])
-				#print(n1[1])
-				for n2 in n[1]:
-					if n2 == n1: continue
-					#print(n2[1])
-					c_a = np.array([float(i) for i in n2[1]])
-					ba = a_a - b_a
-					bc = c_a - b_a
-					cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
-					angle = np.arccos(cosine_angle)
-					print("n1\n",n1)
-					print("n\n",n)
-					print("n2\n",n2)
-					print(self.elements()[n1[0][0]],self.elements()[n[0][0]],self.elements()[n2[0][0]], np.degrees(angle))
-
-	def alkene(self):
-		con = self.connectivity()
-		csp2 = [a for a in con if all([a[1]=="C",len(a[2])==3])]
-		def only_reciprocal(a):
-			csp2_idxs = [a[0] for a in csp2]
-			try_one = True if len([b for b in a[2] if b in csp2_idxs]) == 1 else False
-			if try_one == True:
-				f = [b for b in a[2] if b in csp2_idxs]
-				b = con[f[0]]
-				try_two = True if len([c for c in b[2] if c in csp2_idxs]) == 1 else False
-				return all([try_one,try_two])
-			else: return False
-		alkene = [a for a in csp2 if only_reciprocal(a)]
-		if len(alkene) == 2:
-			print("Double bond:",alkene)
-		else: print("No double bond")
-	def dist_matrix(self):
-		xyz = [[float(b) for b in a] for a in self.cord_strip()]
-		def dist(a, b): return sum((d - c) ** 2 for c, d in zip(a, b)) ** (0.5)
-		return [[dist(a,b) for a in xyz] for b in xyz]
-
-
-
-
-'''		
-		for a in elms:print(a)
-		black_list = []
-		def build_branches(branch):
-			black_list.append(branch.data)
-			if branch.parent != None:
-				for b in [a for a in elms[branch.data][2] if a != branch.parent.data]:
-					if b in black_list: print("Atom {} is in a cycle".format(str(branch.data)))
-					else: branch.add_child(elms[b][1],b)
+class Molecule:
+	def __init__(self,atom_list):
+		assert type(atom_list) is list
+		self.atom_list = [Atom(a,i) for i,a in enumerate(atom_list)]
+		self.abc_angle(0,1,2)
+		self.n_mol_ent()
+	def __str__(self):
+		return "\n".join([str(a) for a in self.atom_list])
+	def int_bond_map(self):
+		return [[b.int_bond_order(a) if a != b and b.int_bond_order(a) > 0.85 else None for a in self.atom_list] for b in self.atom_list]
+	def ts_bond_map(self):
+		return [[b.ts_bond_order(a) if a != b and b.int_bond_order(a) > 0.85 else None for a in self.atom_list] for b in self.atom_list]
+	def print_int_bond_map(self):
+		for a in self.atom_list:
+			bonded = ["{:>3}{:>2}:{:.1f}".format(b.idx,b.element, b.int_bond_order(a)) for b in self.atom_list if a != b and b.int_bond_order(a) > 0.1]
+			print("{:>3}{:>2}".format(a.idx,a.element),"-->",", ".join(bonded))
+	def print_ts_bond_map(self):
+		for a in self.atom_list:
+			bonded = ["{:>3}{:>2}:{:.1f}".format(b.idx,b.element, b.ts_bond_order(a)) for b in self.atom_list if a != b and b.ts_bond_order(a) > 0.1]
+			print("{:>3}{:>2}".format(a.idx,a.element),"-->",", ".join(bonded))
+	def n_mol_ent(self, map=None):
+		if map is None: map = self.int_bond_map()
+		visited = [False for _ in map]
+		n_entities = 0
+		entities = []
+		def check(idx,atoms=[]):
+			visited[idx] = True
+			atoms.append(idx)
+			for ib, b in enumerate(map[idx]):
+				if b is None: continue
+				elif visited[ib]: continue
+				else:
+					print(f"Leaving {idx+1} to check on {ib+1} because of BO: {b}")
+					check(ib, atoms)
+			return atoms
+		for ia,a in enumerate(map):
+			if visited[ia]: continue
 			else:
-				for b in [a for a in elms[branch.data][2] if a not in black_list]:
-					branch.add_child(elms[b][1],b)
-			for a in branch.child:
-				build_branches(a)
-			return branch
-		tree = build_branches(Tree(elms[0][1],12))
-		tree.print_tree()'''
+				print(f"Adding new entitie starting from {ia+1}")
+				n_entities +=1
+				entities.append(check(ia,[]))
+		print("Visited\n",visited)
+		print("n entitites\n", n_entities)
+		print("entities\n", entities)
 
+	def valid_idxs(func):
+		def wrapper(obj,*list):
+			assert all([type(n) is int for n in list]), "Atom indexes should be integers"
+			assert all([n in range(len(obj.atom_list)) for n in list]), "Atom indexes are out of range"
+			return func(obj,*list)
+		return wrapper
+	@valid_idxs
+	def ab_distance(self,a,b):
+		return self.atom_list[a].distance(self.atom_list[b])
+	@valid_idxs
+	def abc_angle(self,a,b,c):
+		return self.atom_list[a].angle(self.atom_list[b],self.atom_list[c])
+	@valid_idxs
+	def abcd_dihedral(self,a,b,c,d):
+		return self.atom_list[a].dihedral(self.atom_list[b],self.atom_list[c],self.atom_list[d])
+
+class Atom:
+	el_radii = dict(element_radii)
+	def __init__(self,line,idx):
+		assert type(line) is list
+		assert len(line) == 4
+		assert line[0] in elements
+		assert all(is_str_float(a) for a in line[1:])
+		self.idx = idx
+		self.element = line[0]
+		self.cord = [float(a) for a in line[1:]]
+	def distance(self,other):
+		return sum((b - a) ** 2 for a, b in zip(self.cord, other.cord)) ** 0.5
+	def angle(self,other_a,other_b):
+		a_a = np.array(self.cord)
+		b_a = np.array(other_a.cord)
+		c_a = np.array(other_b.cord)
+		ba, bc = a_a - b_a, c_a - b_a
+		cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+		angle = np.arccos(cosine_angle)
+		#print("Angle :",self.idx,other_a.idx,other_b.idx,"is:", "{:.2f}°".format(np.degrees(angle)))
+		return angle
+	def dihedral(self,other_a,other_b,other_c):
+		p = np.array([self.cord,other_a.cord,other_b.cord,other_c.cord])
+		# From: stackoverflow.com/questions/20305272/dihedral-torsion-angle-from-four-points-in-cartesian-coordinates-in-python
+		b = p[:-1] - p[1:]
+		b[0] *= -1
+		v = np.array([np.cross(v, b[1]) for v in [b[0], b[2]]])
+		# Normalize vectors
+		v /= np.sqrt(np.einsum('...i,...i', v, v)).reshape(-1, 1)
+		return np.degrees(np.arccos(v[0].dot(v[1])))
+	def ts_bond_order(self,other):
+		return math.exp((Atom.el_radii[self.element]/100 + Atom.el_radii[other.element]/100 - self.distance(other))/0.6)
+	def int_bond_order(self,other):
+		return math.exp((Atom.el_radii[self.element]/100 + Atom.el_radii[other.element]/100 - self.distance(other))/0.3)
+	def __str__(self):
+		return "{}{}".format(self.idx,self.element)

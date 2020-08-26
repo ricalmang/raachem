@@ -60,7 +60,9 @@ class GjfFile:
 		return coordinates
 	@functools.lru_cache(maxsize=1)
 	def route_text(self):
-		return " ".join(self.list[self.route_idx():self.title_idx()])
+		flatten = lambda l: [item for sublist in l for item in sublist]
+		try: return " ".join(flatten([a.split() for a in self.list[self.route_idx():self.title_idx()]]))
+		except: return "No data"
 	@functools.lru_cache(maxsize=1)
 	def c_m_idx(self):
 		if len(self.list[self.title_idx()+2].split()) < 2:
