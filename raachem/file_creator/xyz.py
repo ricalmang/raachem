@@ -1,24 +1,34 @@
 import os, random, math
-from raachem.util.gen_purp import read_item, file_weeder, preferences
+from raachem.util.gen_purp import read_item, file_weeder, preferences, sel_files
 from raachem.file_class.log import LogFile
 from raachem.file_class.xyz import XyzFile
 from raachem.file_class.inp import InpFile
 from raachem.file_class.gjf import GjfFile
 
 def xyz_ent():
-	for i in file_weeder([".xyz"]):
+	weeded_list = file_weeder([".xyz"])
+	weeded_list = weeded_list if preferences.folder_op else sel_files(weeded_list)
+	if not weeded_list: return
+	for i in weeded_list:
 		xyz = XyzFile(read_item(i)).enantiomer()
 		xyz.save_file()
 def input_to_xyz():
 	extension = preferences.gauss_ext if preferences.comp_software == "gaussian" else ".inp"
-	for i in file_weeder([extension]):
+	weeded_list = file_weeder([extension])
+	weeded_list = weeded_list if preferences.folder_op else sel_files(weeded_list)
+	if not weeded_list: return
+	for i in weeded_list:
 		if preferences.comp_software == "orca":
 			xyz = InpFile(read_item(i)).xyz_obj()
 			xyz.save_file()
 		elif preferences.comp_software == "gaussian":
 			xyz = GjfFile(read_item(i)).xyz_obj()
 			xyz.save_file()
-def log_to_xyz(weeded_list):
+
+def log_to_xyz():
+	weeded_list = file_weeder([".log"])
+	weeded_list = weeded_list if preferences.folder_op else sel_files(weeded_list)
+	if not weeded_list: return
 	while True:
 		print("Which geometry do you want?")
 		print("0 - Cancel")
@@ -38,52 +48,53 @@ def log_to_xyz(weeded_list):
 			print("Error on file: {}".format(i))
 			print(e)
 
-def log_to_xyz_scan(weeded_list):
-	print("\nWhich file(s) do you want to analyse? (Separate multiple entries by space | Enter 0 to give up)\n")
-	for idx,file in enumerate(weeded_list,start=1):
-		print("{:<5}{:<40}".format(idx,file))
-	while True:
-		option=input().split()
-		if all(True if a in [str(b) for b in range(len(weeded_list)+1)] else False for a in option):
-			if option: break
-	if "0" in option: print("No files will be analyzed!");return
-	else:
-		for item in [int(i)-1 for i in option]:
-			log = LogFile(read_item(weeded_list[item]))
-			if log.calc_type.lower() == "red": xyzs = log.scan_geoms(); ext_name = "_scan_traject.xyz"
-			elif log.calc_type.lower() == "irc": xyzs = log.irc(); ext_name = "_irc_traject.xyz"
-			elif log.calc_type.lower() in ["opt","ts"]: xyzs = log.opt(); ext_name = "_opt_traject.xyz"
-			else: print("The file is not a scan, opt or irc log file"); continue
-			if len(xyzs) < 2: print("The file contains less than 2 steps"); return
-			max_e = max(float(i.title()) for i in xyzs)
-			min_e = min(float(i.title()) for i in xyzs)
-			c=[0,"percentage","kcal"]
-			print("{:5}{:^90}{:>8}".format("Entry"," >---> Relative Energy >---> "," kcal"))
-			for entry in [float(i.title()) for i in xyzs]:
-				c[0]=c[0]+1
-				c[1]= "|"*int(90*((float(entry)-min_e)/(max_e-min_e)) if max_e != min_e else 0)
-				c[2]= (float(entry)-min_e)*627.5
-				print("{:<5}{:<90}".format(c[0],c[1]),"{:>6.5f}".format(c[2]) if ext_name == "_opt_traject.xyz" else "{:>6.2f}".format(c[2]))
-			file_name = weeded_list[item].replace(".log",ext_name)
-			with open(file_name,mode="w",newline="\n") as file: file.write("\n".join([a for i in xyzs for a in i.return_print()]))
+def log_to_xyz_scan():
+	weeded_list = sel_files(file_weeder([".log"]))
+	for item in weeded_list:
+		log = LogFile(read_item(item))
+		if log.calc_type.lower() == "red": xyzs = log.scan_geoms(); ext_name = "_scan_traject.xyz"
+		elif log.calc_type.lower() == "irc": xyzs = log.irc(); ext_name = "_irc_traject.xyz"
+		elif log.calc_type.lower() in ["opt","ts"]: xyzs = log.opt(); ext_name = "_opt_traject.xyz"
+		else: print("The file is not a scan, opt or irc log file"); continue
+		if len(xyzs) < 2:
+			print("The file contains less than 2 steps")
+			is_terse_irc = all([len(xyzs) < 2, log.calc_type == "IRC",
+				log.raw_route.lower().startswith("#t") or log.raw_route.lower().startswith("# t ")])
+			if is_terse_irc:
+				print("WARNING! Error above may have been caused by the following:")
+				print("IRC calculations with the #T keyword may not archive intermediate geometries")
+				print("#N or #P keywords are recommended instead")
+			continue
+		max_e = max(float(i.title()) for i in xyzs)
+		min_e = min(float(i.title()) for i in xyzs)
+		c=[0,"percentage","kcal"]
+		print("{:5}{:^90}{:>8}".format("Entry"," >---> Relative Energy >---> "," kcal"))
+		for entry in [float(i.title()) for i in xyzs]:
+			c[0]=c[0]+1
+			c[1]= "|"*int(90*((float(entry)-min_e)/(max_e-min_e)) if max_e != min_e else 0)
+			c[2]= (float(entry)-min_e)*627.5
+			print("{:<5}{:<90}".format(c[0],c[1]),"{:>6.5f}".format(c[2]) if ext_name == "_opt_traject.xyz" else "{:>6.2f}".format(c[2]))
+		file_name = item.replace(".log",ext_name)
+		with open(file_name,mode="w",newline="\n") as file: file.write("\n".join([a for i in xyzs for a in i.return_print()]))
 
-def log_freq_xyz(weeded_list):
+def log_freq_xyz():
+	weeded_list = sel_files(file_weeder([".log"]))
 	for i in weeded_list:
 		log = LogFile(read_item(i))
-		if not log.frequencies():
+		if not log.last_freq:
 			print("No frequencies found in file:{}!".format(i))
 			continue
 		option = None
 		while True:
 			print("Analizing file: {}".format(i))
 			print("Chose a frequency to split (0-To cancel/m-For more)")
-			for idx,item in enumerate(log.frequencies(),start=1):
+			for idx,item in enumerate(log.last_freq.frequencies(),start=1):
 				print("{:>5}:{:>15}".format(idx,item))
 				if option == "m": continue
 				if idx > 2: break
 			option=input()
 			if option == "m": continue
-			elif option in [str(a+1) for a in range(len(log.frequencies()))]: break
+			elif option in [str(a+1) for a in range(len(log.last_freq.frequencies()))]: break
 			elif option == "0": break
 			else: print("Invalid option, try again!")
 		if option == "0": continue
@@ -94,10 +105,10 @@ def log_freq_xyz(weeded_list):
 				break
 			except ValueError:
 				print("Not a valid number")
-		left = log.last_xyz_obj().displace(-mult,log.displ_for_freq_idx(int(option)-1))
+		left = log.last_xyz_obj().displace(-mult,log.last_freq.displ_for_freq_idx(int(option)-1))
 		left.list[0] = i.replace(".log","_l.xyz")
 		left.save_file()
-		right = log.last_xyz_obj().displace(mult,log.displ_for_freq_idx(int(option)-1))
+		right = log.last_xyz_obj().displace(mult,log.last_freq.displ_for_freq_idx(int(option)-1))
 		right.list[0] = i.replace(".log","_r.xyz")
 		right.save_file()
 		print("\nJob Done!\n")
@@ -155,6 +166,7 @@ def superimpose_alg():
 				print("Invalid input for either or both {} and {}".format(xyz_1.name(),xyz_2.name()))
 		xyz_2.superimpose(xyz_1, num_atoms, True).print_file()
 		xyz_1.std_cord(num_atoms).print_file()
+
 def geodes_int():
 	"""Requests input for solvation algorithm"""
 	def rot_alg(xyz_1, xyz_2, angles, p_angles, geodes, save):

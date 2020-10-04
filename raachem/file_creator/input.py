@@ -5,19 +5,19 @@ from raachem.file_class.gjf import GjfFile
 from raachem.file_class.log import LogFile
 from raachem.file_class.inp import InpFile
 from raachem.util.constants import element_radii, keywords, elements
-from raachem.util.gen_purp import file_weeder, read_item, preferences, sel_files
+from raachem.util.gen_purp import file_weeder, read_item, preferences, sel_files, is_str_float
 
 class CreateInputs:
-	p_files_dir = os.path.join(os.path.dirname(__file__), "par_templates")
 	def __init__(self,use_logs=False):
 		self.use_logs = use_logs
 		self.original_ext = ".log" if use_logs else ".xyz"
 		self.template_ext = ".GAUSSIAN" if preferences.comp_software == "gaussian" else ".ORCA"
 		self.extension = preferences.gauss_ext if preferences.comp_software == "gaussian" else ".inp"
 		self.weeded_list = file_weeder([self.original_ext])
+		self.p_files_dir = os.path.join(os.path.dirname(__file__),"builtin_templates")
+		self.user_files_dir = os.path.join(os.path.dirname(__file__), "par_templates")
 		self.submit_parameters()
-	def submit_parameters(self,p_files_dir=p_files_dir):
-		p_files = file_weeder([self.template_ext], cf=p_files_dir)
+	def submit_parameters(self):
 		l_files = file_weeder([self.template_ext])
 		if len(l_files) == 1:
 			print("Reading parameters from {} in current folder".format(l_files[0]))
@@ -40,22 +40,23 @@ class CreateInputs:
 				print("Chose an option:")
 				print("0 - To cancel")
 				print("1 - Use builtins")
-				option = {str(i): str(i) for i in range(2)}.get(input(), True)
+				print("2 - User defined")
+				option = {str(i): str(i) for i in range(3)}.get(input(), True)
 			if option == "0": return
-			elif option == "1" and p_files:
+			else:
+				folder = self.p_files_dir if option == "1" else self.user_files_dir
+				p_files = file_weeder([self.template_ext], cf=folder)
 				p_files.insert(0, None)
+				print(f"Reading {self.template_ext} files from:\n{folder}\nChoose a parameter file:")
 				option_2 = True
-				print("Reading {} files from:\n{}\nChose a parameter file:".format(self.template_ext,p_files_dir))
 				for idx, i in enumerate(p_files):
 					if i == None: print("  0 - Cancel")
 					else: print("{:>3} - {}".format(idx, i))
 				while option_2 == True: option_2 = {str(idx): i for idx, i in enumerate(p_files)}.get(input(), True)
 				if option_2 == None: return
 				else:
-					shutil.copy(os.path.join(p_files_dir, option_2), os.path.join(os.getcwd(), "PARAMETERS{}".format(self.template_ext)))
+					shutil.copy(os.path.join(folder, option_2), os.path.join(os.getcwd(), "PARAMETERS{}".format(self.template_ext)))
 					self.try_again()
-			else:
-				print("No builtins")
 	def try_again(self):
 		print("A PARAMETERS{} file was added to the current folder!".format(self.template_ext))
 		print("You can edit it now")
@@ -94,13 +95,24 @@ class CreateInputs:
 				for line in inp_out: file.write(line)
 			print(i.replace(self.original_ext, ".inp"), " created!")
 		return
-	def save_gjf(self,parameters,index,p_files_dir=p_files_dir):
+	def save_gjf(self,parameters,index):
 		heavy_e, gjf_overwrite, folder_op = [preferences.heavy_atom,preferences.gjf_overwrite,preferences.folder_op]
 		ecps, basis = None, None
 		if not folder_op: self.weeded_list = sel_files(self.weeded_list)
 		if not self.weeded_list: return
-		if any([b in [a for a in parameters] for b in ["INSERT_GBS_BASIS","INSERT_GBS_ECP"]]):
-			gbs_files = file_weeder([".gbs"],cf=p_files_dir)
+		if any([b in parameters for b in ["INSERT_GBS_BASIS","INSERT_GBS_ECP"]]):
+			print("This parameter file requires an aditional gbs file.")
+			print("Where should it be taken from?")
+			print("0 - Current folder")
+			print("1 - Builtins")
+			print("2 - User defined")
+			while True:
+				option = input()
+				if option in ["0","1","2"]: break
+			if option == "0": files_dir = os.getcwd()
+			elif option == "1": files_dir = self.p_files_dir
+			elif option == "2": files_dir = self.user_files_dir
+			gbs_files = file_weeder([".gbs"], cf=files_dir)
 			print("Chosse one basis/ecp set\n0 - Cancel")
 			for i, file in enumerate(gbs_files): print("{} - {}".format(i+1, file))
 			while True:
@@ -108,7 +120,7 @@ class CreateInputs:
 				if option in [str(a) for a in range(len(gbs_files)+1)]: break
 				print("Invalid option")
 			if option == "0": return
-			with open(os.path.join(p_files_dir,gbs_files[int(option)-1])) as file:
+			with open(os.path.join(files_dir,gbs_files[int(option)-1])) as file:
 				gbs_file = file.read().splitlines()
 			basis, ecps = self.read_gbs(gbs_file)
 			assert type(basis) == dict, "Basis was not read"
@@ -125,42 +137,85 @@ class CreateInputs:
 					gjf_out.append(line.replace("FILENAME",i.replace(self.original_ext,""))+"\n")
 				for line in xyz.form_cord_block():
 					gjf_out.append(line+"\n")
+				possible = [str(b + 1) for b in range(xyz.n_atoms())]
 				for line in parameters[index+1:]:
 					# SCAN like: "B S APROX" or "B S DIST"
-					if len(line.split()) == 3 and any("modredundant" in i.lower() for i in parameters[0:index]):
+					is_mod_red = any("modredundant" in i.lower() for i in parameters[0:index])
+					s_line = line.split()
+					while len(s_line) == 3:
+						if not is_mod_red: break
+						if s_line[0] != "B" or s_line[1] != "S": break
+						if s_line[2] not in ["APROX","DIST"]: break
 						if xyz.n_atoms() <2:
-							raise Exception("At least two atoms are neded in struture {} to perform a scan".format(xyz.name()))
+							raise Exception(f"At least two atoms are neded in struture {xyz.name()} to perform a scan")
 						atom=["a","b"]
-						possible = [str(b+1) for b in range(xyz.n_atoms())]
-						if line.split() == ["B","S","APROX"]:
-							print("Detected bond scan (APROX) for xyz file {}.".format(i))
+						if s_line[-1] == "APROX":
+							print(f"Detected bond scan (APROX) for xyz file {i}.")
 							while not all(atom[a] in possible if atom[0] != atom[1] else False for a in [0,1]):
 								atom = [input("Enter atom A: "),input("Enter atom B: ")]
-							line=" ".join(["B", atom[0], atom[1], "S","APROX"])
-						elif line.split() == ["B", "S", "DIST"]:
-							print("Detected bond scan (DIST) for xyz file {}.".format(i))
+							line = f"B {atom[0]} {atom[1]} S APROX"
+						elif s_line[-1] == "DIST":
+							print(f"Detected bond scan (DIST) for xyz file {i}.")
 							while not all(atom[a] in possible if atom[0] != atom[1] else False for a in [0,1]):
 								atom = [input("Enter atom A: "),input("Enter atom B: ")]
-							line =" ".join(["B", atom[0], atom[1], "S", "DIST"])
+							line = f"B {atom[0]} {atom[1]} S DIST"
+						s_line = line.split()
+						break
 					# SCAN like: "B 1 2 S APROX" or "B 1 2 S DIST"
-					if len(line.split()) == 5 and any("modredundant" in i.lower() for i in parameters[0:index]):
-						if all([line.split()[0] == "B",line.split()[1].isnumeric(),line.split()[2].isnumeric(), line.split()[3] == "S"]):
-							atoms_idx = [int(i)-1 for idx,i in enumerate(line.split()) if idx in [1,2]]
-							if xyz.n_atoms() < 2:
-								raise Exception("At least two atoms are neded in struture {} to perform a scan".format(xyz.name()))
-							if any(True for a in atoms_idx if not a in range(xyz.n_atoms())):
-								raise Exception("Scan atom numbers are larger than the number of atoms for: {}".format(xyz.name()))
-							atoms_cord = [i for idx,i in enumerate(xyz.cord_block()) if idx in atoms_idx]
-							dist = math.sqrt(sum((float(i)-float(atoms_cord[1][idx]))**2 for idx,i in enumerate(atoms_cord[0]) if idx > 0))
-							ideal_dist=sum(b[1] for idx,b in enumerate(element_radii) if b[0] in [i[0] for i in atoms_cord])/100
-							if all([line.split()[0] == "B", line.split()[3] == "S",line.split()[-1] == "APROX"]):
-								gjf_out.append(line.replace("APROX",str(1+int((dist-ideal_dist)/0.075))+" -0.075\n"))
+					while len(s_line) == 5:
+						if not is_mod_red: break
+						if s_line[0] != "B" or s_line[3] != "S": break
+						if not s_line[1].isdigit(): break
+						if not s_line[2].isdigit(): break
+						if s_line[4] not in ["APROX", "DIST"]: break
+						if xyz.n_atoms() < 2:
+							raise Exception(f"At least two atoms are neded in struture {xyz.name()} to perform a scan")
+						atoms_idx = [int(s_line[1])-1, int(s_line[2])-1]
+						if any(True for a in atoms_idx if not a in range(xyz.n_atoms())):
+							raise Exception(f"Scan atom numbers are larger than the number of atoms for: {xyz.name()}")
+						atoms_cord = [i for idx,i in enumerate(xyz.cord_block()) if idx in atoms_idx]
+						dist = math.sqrt(sum((float(i)-float(atoms_cord[1][idx]))**2 for idx,i in enumerate(atoms_cord[0]) if idx > 0))
+						ideal_dist=sum(b[1] for idx,b in enumerate(element_radii) if b[0] in [i[0] for i in atoms_cord])/100
+						if s_line[-1] == "APROX":
+							gjf_out.append(line.replace("APROX",f"{1+int((dist-ideal_dist)/0.075)} -0.075\n"))
+						elif s_line[-1] == "DIST":
+							gjf_out.append(line.replace("DIST",f"{1+int(ideal_dist/0.075)} 0.075\n"))
+						s_line = line.split()
+						break
+					# SCAN like: "D S"
+					while len(s_line) == 2:
+						if not is_mod_red: break
+						if s_line[0] != "D" or s_line[1] != "S": break
+						print(f"Detected dihedral scan for xyz file {i}.")
+						if xyz.n_atoms() < 4:
+							raise Exception(f"At least two four atoms are neded in struture {xyz.name()} to perform a dihedral scan")
+						while True:
+							atom = [input(f"Enter atom {a}: ") for a in ["A","B","C","D"]]
+							atom = [a.strip() for a in atom]
+							if not all([len(a.split()) == 1 and a.isdigit() for a in atom]):
+								print("No non-numeric characters or spaces are allowed for atom numbers")
 								continue
-							elif all([line.split()[0] == "B", line.split()[3] == "S",line.split()[-1] == "DIST"]):
-								gjf_out.append(line.replace("DIST",str(1+int(ideal_dist/0.075))+" 0.075\n"))
+							if not len(set(atom)) == 4:
+								print("No atom should be repeated!")
 								continue
+							if not all([a in possible for a in atom]):
+								print("Atoms with incorrect number were found!")
+								continue
+							break
+						while True:
+							n_steps = input("Please give the number of steps to be taken: ").strip()
+							if n_steps.isdigit(): break
+							else: print("The number of steps must be an integer")
+						while True:
+							print("Please give the step size to be taken in degrees")
+							size = input("The number must include a dot character as a decimal place (eg. '10.0'): ").strip()
+							if is_str_float(size) and size.count(".") == 1: break
+							else: print("Please make sure the number complies with formating rules!")
+						line = f"D {' '.join(atom)} S {n_steps} {size}"
+						s_line = line.split()
+						break
 					# READOPTIMIZE + NOTATOMS
-					elif line.replace(" ", "").lower() == "notatoms=":
+					if line.replace(" ", "").lower() == "notatoms=":
 						print("Please enter the atoms you want to freeze on structure {} separated by comma".format(xyz.name()))
 						line = line + input(line)
 					# READOPTIMIZE + ATOMS
@@ -168,20 +223,20 @@ class CreateInputs:
 						print("Please enter the atoms you want to optimize on structure {} separated by comma".format(xyz.name()))
 						line = line + input(line)
 					# BASIS like: "LIGHT_ELEMENT_BASIS 0" or "HEAVY_ELEMENT_BASIS 0" and ECP like "HEAVY_ELEMENT_ECP 0"
-					elif len(line.split()) == 2:
+					elif len(s_line) == 2:
 						if any(True for a in ["/gen","gen ","genecp"] if a in " ".join(parameters[0:index-3]).lower()):
-							if line.split() == ["LIGHT_ELEMENT_BASIS","0"]:
+							if s_line == ["LIGHT_ELEMENT_BASIS","0"]:
 								elm = [a for a in xyz.elements() if elements.index(a) < heavy_e+1]
 								if elm: line = line.replace("LIGHT_ELEMENT_BASIS"," ".join(elm))
 								else:
 									for a in range(3): rm_lines.append(len(gjf_out)+a)
-							elif line.split() == ["HEAVY_ELEMENT_BASIS","0"]:
+							elif s_line == ["HEAVY_ELEMENT_BASIS","0"]:
 								elm = [a for a in xyz.elements() if elements.index(a) > heavy_e]
 								if elm: line = line.replace("HEAVY_ELEMENT_BASIS"," ".join(elm))
 								else:
 									for a in range(3): rm_lines.append(len(gjf_out)+a)
 						if "pseudo=read" in " ".join(parameters[0:index - 3]).lower().replace(" ",""):
-							if line.split() == ["HEAVY_ELEMENT_ECP","0"]:
+							if s_line == ["HEAVY_ELEMENT_ECP","0"]:
 								elm = [a for a in xyz.elements() if elements.index(a) > heavy_e]
 								if elm: line = line.replace("HEAVY_ELEMENT_ECP"," ".join(elm))
 								else:
@@ -297,5 +352,8 @@ def validate_input(weeded_list):
 		print("The following keys were not recognized:")
 		print(novel_keys)
 		print("---------------------------------------------------------------------------\n")
-	try: import raapbs; raapbs.option()
-	except ImportError: pass
+	try:
+		import raapbs
+		raapbs.option()
+	except ImportError:
+		pass

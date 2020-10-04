@@ -90,7 +90,8 @@ def csv_e_analysis():
 			log_name = a + ".log"
 			is_log = os.path.isfile(os.path.relpath(log_name, os.getcwd()))
 			log = LogFile(read_item(os.path.relpath(log_name, os.getcwd()))) if is_log else False
-			row[idx("Free energy")] = str(log.thermal[7]) if log and log.frequencies() else "No data"
+			freq = log and log.last_freq
+			row[idx("Free energy")] = str(log.thermal[7]) if freq else "No data"
 			row[idx("+A")] = "-"
 			row[idx("+B")] = "-"
 			row[idx("+C")] = "-"
@@ -99,12 +100,12 @@ def csv_e_analysis():
 			row[idx("-F")] = "-"
 			row[idx("Structure")] = "-"
 			row[idx("Rel_E")] = "(SUM($A#:$E#)-SUM($F#:$G#)-SUM($A#:$E#)+SUM($F#:$G#))*627.509474"
-			row[idx("iFreq")] = log.n_ifreq() if log else "-"
+			row[idx("iFreq")] = log.last_freq.n_ifreq() if freq else "-"
 			row[idx("TYP")] = log.calc_type if log else "-"
 			row[idx("LOG")] = 'HYPERLINK("{}";"Link")'.format(log_name) if log else "-"
 			row[idx("Done?")] = "Yes" if log and log.normal_termin else "No"
 			row[idx("last_SCF")] = str(log.scf_done[-1][-1]) if log and log.normal_termin else "-"
-			row[idx("Hentalphy")] = str(log.thermal[6]) if log and log.frequencies() else "-"
+			row[idx("Hentalphy")] = str(log.thermal[6]) if freq else "-"
 			row[idx("Error msg")] = log.error_msg if log else "-"
 			row[idx("Needs refinement?")] = log.needs_ref() if log else "-"
 			row[idx("Log Route")] = log.raw_route if log else "-"

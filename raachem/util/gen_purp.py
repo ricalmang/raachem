@@ -15,6 +15,7 @@ def read_item(file_name=None, promp=False, extension=None, cf=os.getcwd()):
 	with open(os.path.join(cf,file_name),"r") as in_file: in_content = in_file.read().splitlines()
 	in_content.insert(0,file_name)
 	return in_content
+
 def file_weeder(ext_to_weed,cf=os.getcwd(), promp=True):
 	"""Looks up files with the extensions provided in current directory"""
 	if type(ext_to_weed) == str: ext_to_weed = [ext_to_weed]
@@ -68,7 +69,7 @@ def timeit(method):
 		ts = time.time()
 		result = method(*args, **kw)
 		te = time.time()
-		print('{}:{} ms'.format(method.__name__, (te - ts) * 1000))
+		print('{}:{:.2f} ms'.format(method.__name__, (te - ts) * 1000))
 		return result
 	return timed
 
@@ -87,8 +88,8 @@ class Var:
 		self.folder_op = True
 		self.gauss_ext = ".com"
 		self.comp_software = "gaussian"
-		#self.menu_a = "01 02 03 04 05 06 07 08 09"
 		self.read_variables()
+
 	def read_variables(self,conf_file=conf_file):
 		if not os.path.isfile(conf_file): return
 		with open(conf_file,mode="r") as file: options = file.readlines()
@@ -108,41 +109,51 @@ class Var:
 	def set_variables(self):
 		print("Please type 'chave' and press enter")
 		if input().strip().lower() != "chave": return
+		variables = [
+			["To return", None],
+			["HEIMDALL USER:", "heimdall_user"],
+			["HEIMDALL MAIL:", "heimdall_mail"],
+			["HEIMDALL SEND EMAIL (true/false):", "heimdall_notification"],
+			["AGUIA USER:", "aguia_user"],
+			["ATHENE USER:", "athene_user"],
+			["SUBMISSION SCRIPT NAME:", "sub_s_name"],
+			["ECP IS ADVISED FOR ELEMENTS LARGER THAN:", "heavy_atom"],
+			["OVERWRITE .GJF FILES WITH NO PROMP (true/false):", "gjf_overwrite"],
+			["AUTO OPERATE ON ALL FILES IN THE CWD (true/false):", "folder_op"],
+			["GAUSSIAN INPUT FILE EXTENSION ('.gjf' or '.com'):", "gauss_ext"],
+			["COMPUTATIONAL CHEMISTRY SOFTWARE (orca/gaussian):", "comp_software"]]
+		try:
+			import raapbs
+			var = variables
+		except ImportError:
+			var = [variables[0]]
+			var += [a for i, a in enumerate(variables) if i > 6]
 		while True:
 			print("Which variables do you want to set?")
-			print("0 - To return")
-			print("1 - HEIMDALL USER: {}".format(self.heimdall_user))
-			print("2 - HEIMDALL MAIL: {}".format(self.heimdall_mail))
-			print("3 - HEIMDALL SEND EMAIL?: {}".format("Yes" if self.heimdall_notification else "No"))
-			print("4 - AGUIA USER: {}".format(self.aguia_user))
-			print("5 - ATHENE USER: {}".format(self.athene_user))
-			print("6 - SUBMISSION SCRIPT NAME: {}".format(self.sub_s_name))
-			print("7 - ECP IS ADVISED FOR ELEMENTS LARGER THAN: {}".format(self.heavy_atom))
-			print("8 - OVERWRITE .GJF FILES WITH NO PROMP: {}".format("Yes" if self.gjf_overwrite else "No"))
-			print("9 - AUTO OPERATE ON ALL FILES IN THE CWD: {}".format("Yes" if self.folder_op else "No"))
-			print("10 - GAUSSIAN INPUT FILE EXTENSION: '{}'".format(self.gauss_ext))
-			print("11 - COMPUTATIONAL CHEMISTRY SOFTWARE (orca/gaussian): '{}'".format(self.comp_software))
-			variables = {"0":None,"1":"heimdall_user","2":"heimdall_mail","3":"heimdall_notification","4":"aguia_user",
-						 "5":"athene_user","6":"sub_s_name","7":"heavy_atom","8":"gjf_overwrite","9":"folder_op",
-						 "10":"gauss_ext", "11":"comp_software"}
+			for i, v in enumerate(var):
+				if v[1] is None: print("{} - {}".format(i, v[0]))
+				else: print("{} - {} {}".format(i, v[0], getattr(self, v[1])))
 			while True:
 				option = input().strip()
-				if option in variables:	break
+				if option.isdigit():
+					option = int(option)
+					if option in range(len(var)): break
+					else: print("Invalid Input!")
 				else: print("Invalid Input!")
-			if option == "0": break
-			print("Enter variable '{}' value:".format(variables[option]))
+			if option == 0: break
+			print("Enter variable '{}' value:".format(var[option][1]))
 			while True:
 				value = input()
 				if len(value.split()) != 1:
 					print("Variable name can neither be empty nor contain spaces!")
 					continue
-				elif variables[option] in ["gjf_overwrite","folder_op","heimdall_notification"]:
-					value = "true" if str(value).lower() in ["yes", "true"] else "false"
-				elif variables[option] == "heavy_atom":
+				elif var[option][1] in ["gjf_overwrite","folder_op","heimdall_notification"]:
+					value = True if str(value).lower() in ["yes", "true"] else False
+				elif var[option][1] == "heavy_atom":
 					value = int(value) if value.isdigit() else self.heavy_atom
-				elif variables[option] == "comp_software":
-					value = value.lower() if value.lower() == "orca" else "gaussian"
-				setattr(self,variables[option],value)
+				elif var[option][1] == "comp_software":
+					value = "orca" if value.lower() == "orca" else "gaussian"
+				setattr(self,var[option][1],value)
 				break
 			self.write_save()
 	def write_save(self,conf_file=conf_file):
@@ -151,3 +162,4 @@ class Var:
 		global preferences
 		preferences = Var()
 preferences = Var()
+

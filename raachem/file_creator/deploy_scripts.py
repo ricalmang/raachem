@@ -23,4 +23,3 @@ def deploy():
 		with open((os.path.join(os.getcwd(), options[int(option)])), "w", newline="\n") as file_b:
 			for line in script:
 				file_b.write(str(line))
-

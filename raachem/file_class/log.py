@@ -19,8 +19,7 @@ class LogFile:
 		self.multi_dash_idxs =[]
 		self.scf_done = []
 		####.thermal = ["ZPC","TCE","TCH","TCG","SZPE","STE","STH","STG"]
-		self.thermal = [None , None, None, None, None , None, None, None]
-		self.start_displ_block = None
+		self.thermal = [None, None, None, None, None , None, None, None]
 		self.oc_orb_energies = []
 		self.uno_orb_energies = []
 		self.hash_line_idxs = []
@@ -29,6 +28,7 @@ class LogFile:
 		self.irc_points = []
 		self.scan_points = []
 		self.opt_points = []
+		self.force_const_mat = []
 		for i,a in enumerate(a.strip() for a in self.list):
 			# i = index
 			# a = line.strip()
@@ -62,8 +62,7 @@ class LogFile:
 			elif a[0] == "E":
 				if a.startswith("Error"):                                                self.errors.append(i); continue
 			elif a[0] == "F":
-				condition_a = a.startswith("Frc consts  -- ") and self.start_displ_block is None
-				if condition_a:                                                 self.start_displ_block = i - 4; continue
+				if a.startswith("Full mass-weighted force constant matrix:"):   self.force_const_mat.append(i); continue
 			elif a[0] == "I":
 				if a == "Input orientation:":                                self.start_xyz_idxs.append(i + 5); continue
 			elif a[0] == "L":
@@ -101,9 +100,14 @@ class LogFile:
 		x = None if self.start_xyz_idxs is None else [min(a for a in self.multi_dash_idxs if a > b) for b in self.start_xyz_idxs]
 		self.end_xyz_idxs = x
 		self.scan_end = [min(a for a in self.multi_dash_idxs if a > b[0]) for b in self.scan_points]
-		x = None if self.start_displ_block is None else min(a for a in self.empty_line_idxs if a > self.start_displ_block)
-		self.end_displ_block = x
-		self.displ_block = None if self.end_displ_block is None else self.list[self.start_displ_block:self.end_displ_block]
+		try:
+			x = [self.list[b:min(a for a in self.empty_line_idxs if a > b)] for b in self.force_const_mat]
+			self.displ_block = x
+		except Exception as e:
+			print("Error while finding vibrational frequencies of log file")
+			print(e)
+			print(self.name)
+			self.displ_block = []
 		try:
 			x = None if self.hash_line_idxs is None else min(a for a in self.multi_dash_idxs if a > self.hash_line_idxs[0])
 			x = None if self.hash_line_idxs is None else "".join([a.lstrip() for a in self.list[self.hash_line_idxs[0]:x]])
@@ -146,9 +150,6 @@ class LogFile:
 		if self.init_errors:
 			for a in self.init_errors: print(a)
 			print("Errors above were found on file\n{}".format(self.name))
-		#self.loghelp()
-		#print(self.raw_route)
-		#print(self.first_xyz_obj())
 	@functools.lru_cache(maxsize=1)
 	def loghelp(self):
 		for a in vars(self):
@@ -165,7 +166,7 @@ class LogFile:
 				print("WARNING: Coordinates will be taken from the last job abstract:")
 				print("lines {} - {} of file:".format(self.start_resume_idxs[-1],self.end_resume_idxs[-1]))
 				print("{}".format(self.name))
-				return LogAbstract(self.resumes[0]).xyz_object().cord_block()
+				return self.last_log_abstract.xyz_object().cord_block()
 			else: return None
 		else:
 			return self.xyz_cord_block(self.start_xyz_idxs[-1],self.end_xyz_idxs[-1])
@@ -192,6 +193,7 @@ class LogFile:
 			return len(self.last_cord_block())
 		elif self.first_cord_block():
 			return len(self.first_cord_block())
+
 	def any_xyz_obj(self,a_idx,b_idx,title=" ",name=False):
 		if name == False: name = self.name
 		return XyzFile([name, self.n_atoms, title, *(" ".join(l) for l in self.xyz_cord_block(a_idx,b_idx))])
@@ -201,6 +203,7 @@ class LogFile:
 	@functools.lru_cache(maxsize=1)
 	def first_xyz_obj(self):
 		return XyzFile([self.name,self.n_atoms," ",*(" ".join(l) for l in self.first_cord_block())])
+
 	@functools.lru_cache(maxsize=1)
 	def low_e_xyz_obj(self):
 		if self.calc_type == "SP": return None
@@ -208,19 +211,7 @@ class LogFile:
 			xyzs = {"TS":self.opt,"Red":self.scan_geoms,"IRC":self.irc,"Opt":self.opt}[self.calc_type]()
 			if len(xyzs) == 0: return None
 			else: return sorted(xyzs,key= lambda x: float(x.title()) if is_str_float(x.title()) else 1)[0]
-	@functools.lru_cache(maxsize=1)
-	def frequencies(self):
-		if self.displ_block is None: return False
-		else: return list(itertools.chain(*[i.split()[2:] for i in self.displ_block[2::self.n_atoms+7]]))
-	@functools.lru_cache(maxsize=1)
-	def displ_for_freq_idx(self,freq_idx):
-		if self.displ_block is None: return []
-		displ = []
-		for num in range(self.n_atoms):
-			displ.append(list(itertools.chain(*[i.split()[2:] for i in self.displ_block[7+num::self.n_atoms+7]])))
-		displ_for_freq_str = [a[freq_idx*3:freq_idx*3+3] for a in displ]
-		displ_for_freq_float = [[float(i) for i in b] for b in displ_for_freq_str]
-		return displ_for_freq_float
+
 	@functools.lru_cache(maxsize=1)
 	def _calc_type(self):
 		if self.raw_route:
@@ -239,8 +230,21 @@ class LogFile:
 		return any(True if "Normal termination of Gaussian" in l else False for l in self.list[-5:])
 	def _error_msg(self):
 		error_idxs = [a for a in self.errors if a + 5 > self.lenght]
+		for n in [-4,-3,-2,-1]:
+			if self.list[n].strip().startswith("galloc:  could not allocate memory."):
+				error_idxs.append(n)
 		if error_idxs: return " | ".join([self.list[n] for n in error_idxs])
 		else: return "No data"
+	@functools.lru_cache(maxsize=1)
+	def needs_ref(self):
+		if self.calc_type == "Opt" and self.last_freq:
+			if self.last_freq.n_ifreq() == "0": return "No"
+			else: return "Yes"
+		elif self.calc_type == "TS" and self.last_freq:
+			if self.last_freq.n_ifreq() == "1": return "No"
+			else: return "Yes"
+		else: return "-"
+
 	@functools.lru_cache(maxsize=1)
 	def irc(self):
 		if not all([self.start_xyz_idxs,self.end_xyz_idxs,self.irc_points,self.scf_done]): return []
@@ -280,25 +284,25 @@ class LogFile:
 		if len(geoms) == 0:
 			print("No Optimized geometries found for {} file".format(self.name()))
 		return geoms
-	@functools.lru_cache(maxsize=1)
-	def n_ifreq(self):
-		return str(len([b for b in self.frequencies() if float(b) < 0])) if self.frequencies() else "No data"
-	@functools.lru_cache(maxsize=1)
-	def needs_ref(self):
-		if self.calc_type == "Opt":
-			if self.n_ifreq() == "0": return "No"
-			else: return "Yes"
-		elif self.calc_type == "TS":
-			if self.n_ifreq() == "1": return "No"
-			else: return "Yes"
-		else: return "-"
+
 	n_atoms = property(_n_atoms)
 	normal_termin = property(_normal_termin)
 	calc_type = property(_calc_type)
 	error_msg = property(_error_msg)
 
+	@functools.lru_cache(maxsize=1)
+	def _last_freq(self):
+		return LogFreq(self.displ_block[-1]) if self.displ_block else False
+	@functools.lru_cache(maxsize=1)
+	def _last_log_abstract(self):
+		return LogAbstract(self.resumes[-1]) if self.resumes is not None else False
+	last_freq = property(_last_freq)
+	last_log_abstract = property(_last_log_abstract)
+
+
 class LogAbstract:
 	def __init__(self,content):
+		assert type(content) is list
 		self.list = content
 		self.version = None
 		self.dipole = None
@@ -333,3 +337,50 @@ class LogAbstract:
 	def xyz_object(self):
 		return self.read_strucure()[1]
 
+class LogFreq:
+	def __init__(self, content):
+		assert type(content) is list
+		self.list = content
+		self.rows = []
+		for i,a in enumerate(self.list):
+			if a.lstrip().startswith("Frequencies --"):
+				try:
+					assert self.list[i + 1].lstrip().startswith("Red. masses --")
+					assert self.list[i + 2].lstrip().startswith("Frc consts  --")
+					assert self.list[i + 3].lstrip().startswith("IR Inten    --")
+					self.rows.append(i-2)
+				except AssertionError:
+					continue
+		if not self.rows:
+			self.n_atoms = 1
+			self.block = []
+		else:
+			self.n_atoms = len(self.list) - self.rows[-1] - 7
+			self.block = self.list[self.rows[0]:]
+	def __str__(self):
+		return "\n".join(self.list)
+	@functools.lru_cache(maxsize=1)
+	def frequencies(self):
+		return list(itertools.chain(*[i.split()[2:] for i in self.block[2::self.n_atoms+7]]))
+	@functools.lru_cache(maxsize=1)
+	def ir_intensities(self):
+		return list(itertools.chain(*[i.split()[3:] for i in self.block[5::self.n_atoms+7]]))
+	@functools.lru_cache(maxsize=1)
+	def displ_for_freq_idx(self,freq_idx):
+		displ = []
+		for num in range(self.n_atoms):
+			displ.append(list(itertools.chain(*[i.split()[2:] for i in self.block[7+num::self.n_atoms+7]])))
+		displ_for_freq_str = [a[freq_idx*3:freq_idx*3+3] for a in displ]
+		displ_for_freq_float = [[float(i) for i in b] for b in displ_for_freq_str]
+		return displ_for_freq_float
+	@functools.lru_cache(maxsize=1)
+	def n_ifreq(self):
+		return str(len([b for b in self.frequencies() if float(b) < 0])) if self.frequencies() else "No data"
+	def ir_spectra(self,threshold = 20):
+		pairs = []
+		for a,b in zip(self.frequencies(), self.ir_intensities()):
+			if is_str_float(a) and is_str_float(b):
+				pairs.append([float(a),float(b)])
+		for a,b in zip(sorted(pairs,key=lambda x: x[1], reverse=True), range(threshold)):
+			print("{:>10.1f}{:>10.1f}".format(float(a[0]),float(a[1])))
+		print("---------")
