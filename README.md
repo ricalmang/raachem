@@ -9,23 +9,20 @@ Customizable use of .com or .gjf extensions\
 Bug fixes and other customizations
 
 # Installing
-On Windons:
+**raachem** requires python 3.6 ou superior. Instalation can be done via*:
 ```bash
-py -m pip install raachem
+python -m pip install raachem
 ```
-On Linux:
+Upgrading from older versions can be performed via*:
 ```bash
-python3 -m pip install raachem
+python3 -m pip install -U raachem
 ```
 
 # Running
-After installation is complete, you should be able to run the module from any folder using one of the following:
-On Windons:
+After installation is complete, you should be able to run the module from any folder using one of the following*:
 ```bash
-py -m raachem
-```
-On Linux:
-```bash
-python3 -m raachem
+python -m raachem
 ```
 Done! The script operates on files in the current working directory!
+
+*Depending on your python instalation and os, the command ```py``` or ```python3``` should be employed instead of ```python```.  

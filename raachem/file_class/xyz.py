@@ -72,7 +72,7 @@ class XyzFile:
 		return cordinates
 	@functools.lru_cache(maxsize=1)
 	def form_cord_block(self):
-		return ["{:<5}{:>20f}{:>20f}{:>20f}".format(x[0], *[round(float(x[a]), 6) for a in [1, 2, 3]]) for x in self.cord_block()]
+		return ["{:<5}{:>20.6f}{:>20.6f}{:>20.6f}".format(x[0], *[float(x[a]) for a in [1, 2, 3]]) for x in self.cord_block()]
 	@functools.lru_cache(maxsize=1)
 	def cord_strip(self):
 		return [line[1:] for line in self.cord_block()]
@@ -126,7 +126,7 @@ class XyzFile:
 		rotated = [[b,*[str(n) for n in a]] for b,a in zip(self.all_elements(),rotated)]
 		xyz_mat = [self.name(), self.n_atoms()," ",*[" ".join(a) for a in rotated]]
 		return XyzFile(xyz_mat)
-	def superimpose(self, other, num_atoms=0, print_step=False, ret = "geom",conv=12):
+	def superimpose(self, other, num_atoms=0, print_step=False, ret = "geom",conv=18):
 		"""Takes xyz object and returns xyz object rotated by angle over axis.
 		Returns either the max_distance 'max_d' or final geometry 'geom' after rotations and superpositions"""
 		def rotate(xyz,angle,axis):
@@ -144,18 +144,20 @@ class XyzFile:
 		def calc_err(xyz_1, xyz_2, n_atms):
 			n_atms = len(xyz_1) if n_atms == 0 else n_atms
 			sq_dist = sum(sum(math.pow(c-d,2) for c,d in zip(a,b)) for a,b in zip(xyz_1[:n_atms],xyz_2))
-			return round(sq_dist / n_atms, 5)
+			return math.sqrt(sq_dist / n_atms)
 		def max_dist(xyz_a, xyz_b):
 			return max(math.sqrt(sum(pow(c-d,2) for c,d in zip(a,b))) for a,b in zip(xyz_a,xyz_b))
 		#----------------------
 		last_error = None
 		xyz_1 = [[float(a) for a in b] for b in other.std_cord(num_atoms).cord_strip()]
 		xyz_2 = [[float(a) for a in b] for b in self.std_cord(num_atoms).cord_strip()]
+		#Check atom correspondence
 		for a,b,c in zip(range(len(self.all_elements()) if num_atoms == 0 else num_atoms),other.all_elements(),self.all_elements()):
 			if b != c:
 				atom_number = 'th' if 11<=a+1<=13 else {1:'st',2:'nd',3:'rd'}.get((a+1)%10, 'th')
 				print("WARNING: {}{} atom pair doesn't not correspond to an element match: {} & {}".format(a+1,atom_number,b,c))
 		if print_step: print("======ACTIONS======")
+		#Start algorithm
 		for num in range(conv):
 			step_size = 1 / 2 ** num
 			while True:
@@ -170,16 +172,15 @@ class XyzFile:
 				best_m = errors.index(min(errors))
 				if min(errors) < last_error:
 					xyz_2 = movements[best_m]
-					last_error = min(errors)
 					if print_step:
-						msg = [round(step_size * rot[best_m][0], 5), rot[best_m][1], last_error]
-						print("Rotating {} radian in {}. Avg. Error (A) = {}".format(*msg))
+						msg = [step_size * rot[best_m][0], rot[best_m][1], calc_err(xyz_1, xyz_2, num_atoms)]
+						print("Rotating {:.5f} radian in {}. RMSD = {:.5f}".format(*msg))
 					continue
 				else:
 					if ret == "max_d" and max_dist(xyz_1, xyz_2) < 0.1:
 						return True
 					break
-		if print_step: print("Final Avg. Error (A) = {}".format(round(last_error, 5)))
+		if print_step: print("Final RMSD = {:.5f}".format(calc_err(xyz_1, xyz_2, num_atoms)))
 		if print_step: print("========END========")
 		if ret == "geom":
 			cord_block = [" ".join([a,*[str(n) for n in b]]) for a,b in zip(self.all_elements(),xyz_2)]
