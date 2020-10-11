@@ -1,0 +1,12 @@
+%nprocshared=8
+%mem=15gb
+#T m06l/Def2TZVP Integral=UltraFine SCRF=(solvent=methanol,SMD)
+
+Title
+
+1 1
+=====WILL BE GEOMETRY BLOCK=====
+
+
+
+

@@ -1,0 +1,5 @@
+! DLPNO-CCSD(T) def2-TZVP def2-TZVP/C TIGHTSCF TightPNO PAL8
+%maxcore 3000
+* xyz 1 1
+=====WILL BE GEOMETRY BLOCK=====
+*
