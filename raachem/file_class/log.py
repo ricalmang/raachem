@@ -50,7 +50,7 @@ class LogFile:
 				text_a = "Alpha  occ. eigenvalues --"
 				text_b = "Alpha virt. eigenvalues --"
 				if a.startswith(text_a):
-					text = a.replace(text_a,"").split();                     self.oc_orb_energies.extend(text); continue
+					text = a.replace(text_a,"").replace("-"," -").split();   self.oc_orb_energies.extend(text); continue
 				elif a.startswith(text_b):
 					text = a.replace(text_b,"").split();                    self.uno_orb_energies.extend(text); continue
 			elif a[0] == "C":
