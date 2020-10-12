@@ -142,7 +142,7 @@ def csv_e_analysis():
 				except Exception: sheet1.write(i_a, i_b, b)
 			else: sheet1.write(i_a, i_b, b)
 	try:
-		wb.save("linked_analysis.xls")
+		wb.save("linked_analysis.xlsx")
 	except PermissionError:
 		print("Error while saving file!\nIs the file '{}' already open?".format("linked_analysis.xls"))
 
