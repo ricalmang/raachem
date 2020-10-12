@@ -143,9 +143,11 @@ class CreateInputs:
 					is_mod_red = any("modredundant" in i.lower() for i in parameters[0:index])
 					s_line = line.split()
 					while len(s_line) == 3:
-						if not is_mod_red: break
 						if s_line[0] != "B" or s_line[1] != "S": break
 						if s_line[2] not in ["APROX","DIST"]: break
+						if not is_mod_red:
+							print("Missing 'modredundant' keyword?")
+							break
 						if xyz.n_atoms() <2:
 							raise Exception(f"At least two atoms are neded in struture {xyz.name()} to perform a scan")
 						atom=["a","b"]
@@ -163,11 +165,14 @@ class CreateInputs:
 						break
 					# SCAN like: "B 1 2 S APROX" or "B 1 2 S DIST"
 					while len(s_line) == 5:
-						if not is_mod_red: break
+
 						if s_line[0] != "B" or s_line[3] != "S": break
 						if not s_line[1].isdigit(): break
 						if not s_line[2].isdigit(): break
 						if s_line[4] not in ["APROX", "DIST"]: break
+						if not is_mod_red:
+							print("Missing 'modredundant' keyword?")
+							break
 						if xyz.n_atoms() < 2:
 							raise Exception(f"At least two atoms are neded in struture {xyz.name()} to perform a scan")
 						atoms_idx = [int(s_line[1])-1, int(s_line[2])-1]
