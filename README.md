@@ -11,7 +11,7 @@ Bug fixes and other customizations
 # Installing
 **raachem** requires python 3.6 ou superior. Instalation can be done via*:
 ```bash
-python -m pip install raachem
+python -m pip install setuptools raachem
 ```
 Upgrading from older versions can be performed via*:
 ```bash
