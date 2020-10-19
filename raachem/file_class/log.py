@@ -1,7 +1,7 @@
 from raachem.file_class.xyz import XyzFile
 from raachem.util.constants import elements
 from raachem.util.gen_purp import is_str_float
-import functools, itertools
+import functools, itertools, math
 
 class LogFile:
 	calc_types = ["TS","Red","IRC","Opt","SP"]
@@ -29,6 +29,7 @@ class LogFile:
 		self.scan_points = []
 		self.opt_points = []
 		self.force_const_mat = []
+		self.distance_matrix = []
 		for i,a in enumerate(a.strip() for a in self.list):
 			# i = index
 			# a = line.strip()
@@ -59,6 +60,8 @@ class LogFile:
 					pattern = ("Charge", "=", "Multiplicity", "=")
 					if all(x == b[n] for x,n in zip(pattern,(0,1,3,4))):
 						self.input_geom_idx = i;                                    self.charge_mult = b[2::3]; continue
+			elif a[0] == "D":
+				if a.startswith("Distance matrix (angstroms):"):   				self.distance_matrix.append(i); continue
 			elif a[0] == "E":
 				if a.startswith("Error"):                                                self.errors.append(i); continue
 			elif a[0] == "F":
@@ -150,6 +153,7 @@ class LogFile:
 		if self.init_errors:
 			for a in self.init_errors: print(a)
 			print("Errors above were found on file\n{}".format(self.name))
+		self._xyz_from_dist_matrix()
 	@functools.lru_cache(maxsize=1)
 	def loghelp(self):
 		for a in vars(self):
@@ -290,14 +294,21 @@ class LogFile:
 	calc_type = property(_calc_type)
 	error_msg = property(_error_msg)
 
+
+
 	@functools.lru_cache(maxsize=1)
 	def _last_freq(self):
 		return LogFreq(self.displ_block[-1]) if self.displ_block else False
 	@functools.lru_cache(maxsize=1)
 	def _last_log_abstract(self):
 		return LogAbstract(self.resumes[-1]) if self.resumes is not None else False
+	def _xyz_from_dist_matrix(self):
+		end_idx = lambda x: next(i for i,a in enumerate(self.list[x+1:],start=x+1) if not a.split()[0].isdigit())
+		return [DistMatrix(self.list[a+1:end_idx(a)]) for a in self.distance_matrix]
+
+
 	last_freq = property(_last_freq)
-	last_log_abstract = property(_last_log_abstract)
+	xyz_from_dist_matrix = property(_xyz_from_dist_matrix)
 
 
 class LogAbstract:
@@ -384,3 +395,40 @@ class LogFreq:
 		for a,b in zip(sorted(pairs,key=lambda x: x[1], reverse=True), range(threshold)):
 			print("{:>10.1f}{:>10.1f}".format(float(a[0]),float(a[1])))
 		print("---------")
+class DistMatrix:
+
+	def __init__(self,text):
+		self.element = {}
+		for a in [b.split() for b in text]:
+			idx = "".join(a[0:2])
+			if len(a) > 2 and a[1] in elements:
+				if idx in self.element:
+					self.element[idx].extend([float(c) for c in a[2:]])
+					continue
+				else:
+					self.element[idx] = [float(c) for c in a[2:]]
+		for a in self.element:
+			print(a,self.element[a])
+		self.dist_matrix = sorted(self.element.values(),key=lambda x: len(x))
+		self.elem_vector = sorted(self.element.keys(), key=lambda x: len(self.element[x]))
+		self.xyz_ent_a = []
+		self.xyz_ent_b = []
+		for i,a in enumerate(self.dist_matrix):
+			if i == 0:
+				self.xyz_ent_a.append([0, 0, 0])
+				self.xyz_ent_b.append([0, 0, 0])
+			if i == 1:
+				self.xyz_ent_a.append([a[0], 0, 0])
+				self.xyz_ent_b.append([a[0], 0, 0])
+			if i == 2:
+				x = (self.dist_matrix[i-1][0]**2+a[0]**2-a[1]**2)/(2*self.dist_matrix[i-1][0])
+				y = math.sqrt(a[1]**2-x**2)
+				self.xyz_ent_a.append([x, y, 0])
+				self.xyz_ent_b.append([x, y, 0])
+			if i > 2:
+				x = (self.dist_matrix[i-1][0]**2+a[0]**2-a[1]**2)/(2*self.dist_matrix[i-1][0])
+				y = math.sqrt(a[1]**2-x**2)
+				z =
+				self.xyz_ent_a.append([x, y, 0])
+				self.xyz_ent_b.append([x, y, 0])
+
