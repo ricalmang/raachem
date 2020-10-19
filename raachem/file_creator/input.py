@@ -182,9 +182,9 @@ class CreateInputs:
 						dist = math.sqrt(sum((float(i)-float(atoms_cord[1][idx]))**2 for idx,i in enumerate(atoms_cord[0]) if idx > 0))
 						ideal_dist=sum(b[1] for idx,b in enumerate(element_radii) if b[0] in [i[0] for i in atoms_cord])/100
 						if s_line[-1] == "APROX":
-							gjf_out.append(line.replace("APROX",f"{1+int((dist-ideal_dist)/0.075)} -0.075\n"))
+							line = line.replace("APROX",f"{1+int((dist-ideal_dist)/0.075)} -0.075")
 						elif s_line[-1] == "DIST":
-							gjf_out.append(line.replace("DIST",f"{1+int(ideal_dist/0.075)} 0.075\n"))
+							line = line.replace("DIST",f"{1+int(ideal_dist/0.075)} 0.075")
 						s_line = line.split()
 						break
 					# SCAN like: "D S"
@@ -344,7 +344,7 @@ def validate_input(weeded_list):
 					p_matches.sort(key=lambda x: x[2])
 					typo_error.append([p_matches[0][0],p_matches[0][1]])
 			novel_keys.append([i for i in no_match if i not in [a[0] for a in typo_error]])
-			if any([comp_input.basis_errors(),typo_error,comp_input.ecp_errors(preferences.heavy_atom),len(comp_input.name().split()) != 1]):
+			if any([comp_input.route_errors(),comp_input.basis_errors(),typo_error,comp_input.ecp_errors(preferences.heavy_atom),len(comp_input.name().split()) != 1]):
 				print("{:>7}+----------------------------ALERT---------------------------+".format(" "))
 				for error in comp_input.basis_errors(): print("{:>8}{:>60}".format("|",error+" |"))
 				for error in comp_input.ecp_errors(preferences.heavy_atom): print("{:>8}{:>60}".format("|",error+" |"))
