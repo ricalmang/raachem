@@ -151,6 +151,15 @@ class GjfFile:
 		if surpl_ecp:errors.append("Surplous ecp for: {} ?".format(" ".join(surpl_ecp)))
 		if rep_ecp:errors.append("Repeated ecp for: {} ?".format(" ".join(rep_ecp)))
 		return errors
+	def route_errors(self):
+		errors = []
+		keywords = self.route_text().lower().split()
+		if len(keywords) > 1:
+			if "nosymm" in 	keywords:
+				if keywords[0] == "#t" or keywords[0:2] == ["#","t"]:
+					errors.append("Combination of 'NoSymm' and '#T' might supress geometry output!")
+
+
 	@functools.lru_cache(maxsize=1)
 	def mem(self):
 		for line in self.list:

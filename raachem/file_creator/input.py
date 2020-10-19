@@ -348,6 +348,7 @@ def validate_input(weeded_list):
 				print("{:>7}+----------------------------ALERT---------------------------+".format(" "))
 				for error in comp_input.basis_errors(): print("{:>8}{:>60}".format("|",error+" |"))
 				for error in comp_input.ecp_errors(preferences.heavy_atom): print("{:>8}{:>60}".format("|",error+" |"))
+				for error in comp_input.route_errors(): print("{:>8}{:>60}".format("|", error + " |"))
 				for i in typo_error: print("{:>8}{:>60}".format("|", "Is '{}' a typo of '{}'?".format(i[0],i[1]) + " |"))
 				if len(comp_input.name().split()) != 1: print("{:>8}{:>60}".format("|", "Filename must not contain spaces!" + " |"))
 				print("{:>7}+-----------------------------------------------------------+".format(" "))

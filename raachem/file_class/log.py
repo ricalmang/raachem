@@ -153,7 +153,7 @@ class LogFile:
 		if self.init_errors:
 			for a in self.init_errors: print(a)
 			print("Errors above were found on file\n{}".format(self.name))
-		self._xyz_from_dist_matrix()
+		#self._xyz_from_dist_matrix()
 	@functools.lru_cache(maxsize=1)
 	def loghelp(self):
 		for a in vars(self):
@@ -306,7 +306,7 @@ class LogFile:
 		end_idx = lambda x: next(i for i,a in enumerate(self.list[x+1:],start=x+1) if not a.split()[0].isdigit())
 		return [DistMatrix(self.list[a+1:end_idx(a)]) for a in self.distance_matrix]
 
-
+	last_log_abstract = property(_last_log_abstract)
 	last_freq = property(_last_freq)
 	xyz_from_dist_matrix = property(_xyz_from_dist_matrix)
 
@@ -428,7 +428,7 @@ class DistMatrix:
 			if i > 2:
 				x = (self.dist_matrix[i-1][0]**2+a[0]**2-a[1]**2)/(2*self.dist_matrix[i-1][0])
 				y = math.sqrt(a[1]**2-x**2)
-				z =
+				#z =
 				self.xyz_ent_a.append([x, y, 0])
 				self.xyz_ent_b.append([x, y, 0])
 
